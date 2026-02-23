@@ -1,0 +1,12 @@
+{
+  "name": "pantrypilot-backend",
+  "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix apps/api",
+    "test": "npm test --prefix apps/api",
+    "build": "npm run build --prefix apps/api",
+    "seed": "npm run seed --prefix apps/api",
+    "docker:up": "docker compose -f docker/docker-compose.yml up -d",
+    "docker:down": "docker compose -f docker/docker-compose.yml down"
+  }
+}

@@ -1,0 +1,66 @@
+{
+  "merchant": "MIGROS",
+  "purchaseDate": "2026-02-23",
+  "lineItems": [
+    {
+      "rawText": "M-CLASSIC MILCH 1L",
+      "quantity": 1,
+      "unit": "L",
+      "price": 1.60
+    },
+    {
+      "rawText": "JOGHURT NATUR 500G",
+      "quantity": 500,
+      "unit": "g",
+      "price": 1.20
+    },
+    {
+      "rawText": "RÜEBLI 1KG",
+      "quantity": 1,
+      "unit": "kg",
+      "price": 2.50
+    },
+    {
+      "rawText": "ÄPFEL 1KG",
+      "quantity": 1,
+      "unit": "kg",
+      "price": 3.90
+    },
+    {
+      "rawText": "BROT ZOPF",
+      "quantity": 1,
+      "unit": "Stk",
+      "price": 3.20
+    },
+    {
+      "rawText": "EIER FREIL 10ST",
+      "quantity": 10,
+      "unit": "Stk",
+      "price": 5.90
+    },
+    {
+      "rawText": "POULETBRUST",
+      "quantity": 0.4,
+      "unit": "kg",
+      "price": 8.40
+    },
+    {
+      "rawText": "KÄSE SCHEIBEN",
+      "quantity": 1,
+      "unit": "Stk",
+      "price": 3.50
+    },
+    {
+      "rawText": "PFAND",
+      "quantity": null,
+      "unit": null,
+      "price": 0.30
+    },
+    {
+      "rawText": "SACK GEBÜHR",
+      "quantity": null,
+      "unit": null,
+      "price": 0.05
+    }
+  ]
+}

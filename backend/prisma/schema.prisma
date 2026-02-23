@@ -1,0 +1,135 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(uuid()) @db.Uuid
+  appleUserId String   @unique @map("apple_user_id")
+  email       String?
+  displayName String?  @map("display_name")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  syncItems         SyncInventoryItem[]
+  syncShoppingItems SyncShoppingItem[]
+
+  @@map("users")
+}
+
+model SyncInventoryItem {
+  id                 String    @id @default(uuid()) @db.Uuid
+  userId             String    @map("user_id") @db.Uuid
+  clientId           String    @map("client_id")
+  canonicalName      String    @map("canonical_name")
+  quantity           Float
+  unit               String
+  location           String
+  purchaseDate       DateTime  @map("purchase_date")
+  estimatedExpiryDate DateTime? @map("estimated_expiry_date")
+  opened             Boolean   @default(false)
+  notes              String?
+  category           String?
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clientId])
+  @@map("sync_inventory_items")
+}
+
+model SyncShoppingItem {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  clientId       String   @map("client_id")
+  name           String
+  targetQuantity Float?   @map("target_quantity")
+  unit           String?
+  addedAt        DateTime @map("added_at")
+  isCompleted    Boolean  @default(false) @map("is_completed")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clientId])
+  @@map("sync_shopping_items")
+}
+
+model Merchant {
+  id       String    @id @default(uuid()) @db.Uuid
+  code     String    @unique
+  name     String
+  products Product[]
+  offers   Offer[]
+
+  @@map("merchants")
+}
+
+model Product {
+  id            String   @id @default(uuid()) @db.Uuid
+  merchantId    String   @map("merchant_id") @db.Uuid
+  remoteId      String   @map("remote_id")
+  ean           String?
+  name          String
+  canonicalName String   @map("canonical_name")
+  brand         String?
+  categoryPath  String[] @map("category_path")
+  unitText      String?  @map("unit_text")
+  keywords      String[]
+  imageUrl      String?  @map("image_url")
+  lastSeenAt    DateTime @default(now()) @map("last_seen_at")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  merchant Merchant       @relation(fields: [merchantId], references: [id])
+  aliases  ProductAlias[]
+
+  @@unique([merchantId, remoteId])
+  @@index([ean])
+  @@index([canonicalName])
+  @@index([keywords], type: Gin)
+  @@map("products")
+}
+
+model ProductAlias {
+  id        String   @id @default(uuid()) @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  alias     String
+  source    String   @default("derived")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([alias])
+  @@map("product_aliases")
+}
+
+model Offer {
+  id           String    @id @default(uuid()) @db.Uuid
+  merchantId   String    @map("merchant_id") @db.Uuid
+  remoteId     String?   @map("remote_id")
+  title        String
+  startsAt     DateTime? @map("starts_at")
+  endsAt       DateTime? @map("ends_at")
+  discountText String?   @map("discount_text")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  merchant Merchant @relation(fields: [merchantId], references: [id])
+
+  @@map("offers")
+}
+
+model ReceiptLineNormalization {
+  id            String   @id @default(uuid()) @db.Uuid
+  rawKey        String   @unique @map("raw_key")
+  canonicalName String   @map("canonical_name")
+  categoryHint  String?  @map("category_hint")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  @@map("receipt_line_normalizations")
+}

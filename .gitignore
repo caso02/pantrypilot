@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+.build/
+DerivedData/
+
+# Environment & Secrets
+.env
+.env.*
+!.env.example
+*.p8
+*.p12
+*.mobileprovision
+
+# Build artifacts
+build/
+dist/
+*.xcarchive
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+*.swp
+*.swo
+*~
+
+# Xcode
+xcuserdata/
+*.xcworkspace/xcuserdata/
+
+# Logs
+*.log
