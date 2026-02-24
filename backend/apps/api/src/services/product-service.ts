@@ -139,5 +139,17 @@ export async function searchLocalProducts(
     },
   });
 
-  return products.slice(0, limit).map(({ keywords: _k, ...rest }) => rest);
+  return products.slice(0, limit).map(({
+    keywords: _k,
+    ...rest
+  }: {
+    keywords: string[];
+    id: string;
+    canonicalName: string;
+    name: string;
+    ean: string | null;
+    unitText: string | null;
+    categoryPath: string[];
+    imageUrl: string | null;
+  }) => rest);
 }

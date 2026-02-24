@@ -61,7 +61,12 @@ export async function matchLines(
       results.push({
         rawText: line.rawText,
         rawKey,
-        suggestions: overrideProducts.map((p) => ({
+        suggestions: overrideProducts.map((p: {
+          id: string;
+          canonicalName: string;
+          unitText: string | null;
+          categoryPath: string[];
+        }) => ({
           productId: p.id,
           canonicalName: p.canonicalName,
           unitText: p.unitText,

@@ -144,7 +144,7 @@ export async function syncRoutes(app: FastifyInstance) {
 
       receiptClientIds.push(receipt.clientId);
 
-      const existingLines = await prisma.syncReceiptLineItem.findMany({
+      const existingLines: Array<{ clientId: string }> = await prisma.syncReceiptLineItem.findMany({
         where: { receiptId: savedReceipt.id },
         select: { clientId: true },
       });
@@ -178,8 +178,8 @@ export async function syncRoutes(app: FastifyInstance) {
       }
 
       const staleLineIds = existingLines
-        .map((line) => line.clientId)
-        .filter((id) => !incomingLineIds.includes(id));
+        .map((line: { clientId: string }) => line.clientId)
+        .filter((id: string) => !incomingLineIds.includes(id));
       if (staleLineIds.length > 0) {
         await prisma.syncReceiptLineItem.deleteMany({
           where: { receiptId: savedReceipt.id, clientId: { in: staleLineIds } },
@@ -225,7 +225,18 @@ export async function syncRoutes(app: FastifyInstance) {
     });
 
     return reply.send({
-      inventory: inventory.map(i => ({
+      inventory: inventory.map((i: {
+        clientId: string;
+        canonicalName: string;
+        quantity: number;
+        unit: string;
+        location: string;
+        purchaseDate: Date;
+        estimatedExpiryDate: Date | null;
+        opened: boolean;
+        notes: string | null;
+        category: string | null;
+      }) => ({
         clientId: i.clientId,
         canonicalName: i.canonicalName,
         quantity: i.quantity,
@@ -237,7 +248,14 @@ export async function syncRoutes(app: FastifyInstance) {
         notes: i.notes,
         category: i.category,
       })),
-      shoppingList: shoppingList.map(s => ({
+      shoppingList: shoppingList.map((s: {
+        clientId: string;
+        name: string;
+        targetQuantity: number | null;
+        unit: string | null;
+        addedAt: Date;
+        isCompleted: boolean;
+      }) => ({
         clientId: s.clientId,
         name: s.name,
         targetQuantity: s.targetQuantity,
@@ -245,13 +263,34 @@ export async function syncRoutes(app: FastifyInstance) {
         addedAt: s.addedAt.toISOString(),
         isCompleted: s.isCompleted,
       })),
-      receipts: receipts.map((r) => ({
+      receipts: receipts.map((r: {
+        clientId: string;
+        merchant: string;
+        date: Date;
+        totalAmount: number | null;
+        itemCount: number;
+        lineItems: Array<{
+          clientId: string;
+          name: string;
+          quantity: number;
+          unit: string;
+          unitPrice: number | null;
+          category: string | null;
+        }>;
+      }) => ({
         clientId: r.clientId,
         merchant: r.merchant,
         date: r.date.toISOString(),
         totalAmount: r.totalAmount,
         itemCount: r.itemCount,
-        lineItems: r.lineItems.map((line) => ({
+        lineItems: r.lineItems.map((line: {
+          clientId: string;
+          name: string;
+          quantity: number;
+          unit: string;
+          unitPrice: number | null;
+          category: string | null;
+        }) => ({
           clientId: line.clientId,
           name: line.name,
           quantity: line.quantity,
