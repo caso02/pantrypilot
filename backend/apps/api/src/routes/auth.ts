@@ -49,7 +49,15 @@ export async function verifySessionToken(token: string): Promise<{ userId: strin
 
 export async function authRoutes(app: FastifyInstance) {
   app.post("/v1/auth/apple", async (request, reply) => {
-    const body = appleAuthSchema.parse(request.body);
+    const parsed = appleAuthSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({
+        error: "Invalid request body",
+        details: parsed.error.flatten(),
+      });
+    }
+
+    const body = parsed.data;
     const env = getEnv();
     const prisma = getPrisma();
 
@@ -61,8 +69,10 @@ export async function authRoutes(app: FastifyInstance) {
       appleUserId = verified.sub;
       verifiedEmail = verified.email;
     } catch (err: any) {
-      request.log.warn({ err }, "Apple token verification failed, using client userId");
-      appleUserId = body.userId;
+      request.log.warn({ err }, "Apple token verification failed");
+      return reply.status(401).send({
+        error: "Invalid Apple identity token",
+      });
     }
 
     const user = await prisma.user.upsert({
