@@ -81,6 +81,10 @@ final class InventoryViewModel {
     var isLoading: Bool { store.isLoading }
     var errorMessage: String? { store.errorMessage }
 
+    func clearError() {
+        store.errorMessage = nil
+    }
+
     func loadData() async {
         await store.loadInventory()
     }

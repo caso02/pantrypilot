@@ -41,7 +41,14 @@ export async function syncRoutes(app: FastifyInstance) {
     const userId = await extractUserId(request.headers.authorization);
     if (!userId) return reply.status(401).send({ error: "Unauthorized" });
 
-    const body = syncPushSchema.parse(request.body);
+    const parsed = syncPushSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({
+        error: "Invalid request body",
+        details: parsed.error.flatten(),
+      });
+    }
+    const body = parsed.data;
     const prisma = getPrisma();
 
     for (const item of body.inventory) {

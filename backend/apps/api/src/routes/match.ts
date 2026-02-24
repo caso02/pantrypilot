@@ -48,11 +48,14 @@ export async function matchRoutes(app: FastifyInstance): Promise<void> {
     }
 
     // Step 2: If LLM is available and there are weak matches, use LLM to re-interpret
+    let llmActuallyUsed = false;
     if (useLLM && isLLMConfigured() && weakLines.length > 0) {
       try {
         const llmParsed = await parseReceiptLines(
-          weakLines.map((w) => w.rawText)
+          weakLines.map((w) => w.rawText),
+          request.log
         );
+        llmActuallyUsed = true;
 
         // Re-match LLM-interpreted names against DB
         const llmMatchInput = llmParsed.map((r) => ({
@@ -98,7 +101,7 @@ export async function matchRoutes(app: FastifyInstance): Promise<void> {
 
     return {
       matches: directMatches,
-      llmUsed: useLLM && isLLMConfigured() && weakLines.length > 0,
+      llmUsed: llmActuallyUsed,
     };
   });
 }

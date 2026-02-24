@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import AuthenticationServices
+import GoogleSignIn
 
 @Observable
 @MainActor
@@ -58,6 +59,52 @@ final class SessionStore {
         }
     }
 
+    func signInWithGoogle(idToken: String, email: String?, displayName: String?) async throws {
+        let backendURLString = UserDefaults.standard.string(forKey: "backendURL")
+        let baseURL = URL(string: backendURLString ?? "") ?? backendDefaultURL
+        let url = baseURL.appendingPathComponent("/v1/auth/google")
+
+        struct GoogleAuthBody: Encodable {
+            let idToken: String
+            let displayName: String?
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONEncoder().encode(GoogleAuthBody(idToken: idToken, displayName: displayName))
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        let statusCode = (response as? HTTPURLResponse)?.statusCode ?? -1
+        guard statusCode == 200 else {
+            let body = String(data: data, encoding: .utf8) ?? "(no body)"
+            AppLogger.general.error("Google auth backend error \(statusCode): \(body)")
+            throw GoogleSignInError.backendErrorDetailed(status: statusCode, body: body)
+        }
+
+        struct AuthResponse: Decodable {
+            let token: String
+            struct UserInfo: Decodable {
+                let displayName: String?
+                let email: String?
+            }
+            let user: UserInfo
+        }
+        let authResponse = try JSONDecoder().decode(AuthResponse.self, from: data)
+
+        signIn(token: authResponse.token)
+
+        let resolvedName = authResponse.user.displayName ?? displayName ?? ""
+        if !resolvedName.isEmpty {
+            self.userName = resolvedName
+            UserDefaults.standard.set(resolvedName, forKey: userNameKey)
+        }
+        let resolvedEmail = authResponse.user.email ?? email ?? ""
+        if !resolvedEmail.isEmpty {
+            self.userEmail = resolvedEmail
+            UserDefaults.standard.set(resolvedEmail, forKey: userEmailKey)
+        }
+    }
+
     func signIn(token: String) {
         do {
             try KeychainWrapper.saveString(token, forKey: tokenKey)
@@ -75,6 +122,7 @@ final class SessionStore {
         } catch {
             AppLogger.general.error("Keychain delete failed: \(error.localizedDescription)")
         }
+        GIDSignIn.sharedInstance.signOut()
         self.token = nil
         self.isAuthenticated = false
         self.userName = nil
@@ -93,6 +141,27 @@ final class SessionStore {
             }
         } catch {
             AppLogger.general.error("Credential state check failed: \(error.localizedDescription)")
+        }
+    }
+
+    private var backendDefaultURL: URL {
+        #if targetEnvironment(simulator)
+        return URL(string: "http://localhost:3000")!
+        #else
+        return URL(string: "http://192.168.1.61:3000")!
+        #endif
+    }
+}
+
+enum GoogleSignInError: LocalizedError {
+    case backendError
+    case backendErrorDetailed(status: Int, body: String)
+    var errorDescription: String? {
+        switch self {
+        case .backendError:
+            return "Anmeldung am Server fehlgeschlagen. Bitte erneut versuchen."
+        case .backendErrorDetailed(let status, let body):
+            return "Server-Fehler \(status): \(body)"
         }
     }
 }

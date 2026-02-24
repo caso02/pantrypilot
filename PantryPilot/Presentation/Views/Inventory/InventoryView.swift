@@ -87,6 +87,19 @@ struct InventoryView: View {
                 }
             }
         }
+        .alert(
+            "Fehler",
+            isPresented: Binding(
+                get: { viewModel.errorMessage != nil },
+                set: { if !$0 { viewModel.clearError() } }
+            )
+        ) {
+            Button("OK", role: .cancel) {
+                viewModel.clearError()
+            }
+        } message: {
+            Text(viewModel.errorMessage ?? "Unbekannter Fehler")
+        }
     }
 
     // MARK: - Location Picker

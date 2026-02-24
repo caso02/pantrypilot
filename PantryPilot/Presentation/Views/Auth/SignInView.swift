@@ -1,9 +1,11 @@
 import SwiftUI
 import AuthenticationServices
+import GoogleSignIn
 
 struct SignInView: View {
     let sessionStore: SessionStore
     @State private var errorMessage: String?
+    @State private var isGoogleLoading = false
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
@@ -91,7 +93,7 @@ struct SignInView: View {
     // MARK: - Sign In
 
     private var signInSection: some View {
-        VStack(spacing: AppSpacing.l) {
+        VStack(spacing: AppSpacing.m) {
             SignInWithAppleButton(.signIn) { request in
                 request.requestedScopes = [.fullName, .email]
             } onCompletion: { result in
@@ -101,6 +103,8 @@ struct SignInView: View {
             .frame(height: 54)
             .clipShape(RoundedRectangle(cornerRadius: AppSpacing.buttonRadius, style: .continuous))
             .padding(.horizontal, AppSpacing.xxl)
+
+            googleSignInButton
 
             if let errorMessage {
                 Text(errorMessage)
@@ -116,6 +120,44 @@ struct SignInView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, AppSpacing.xxl)
         }
+    }
+
+    private var googleSignInButton: some View {
+        Button {
+            Task { await handleGoogleSignIn() }
+        } label: {
+            HStack(spacing: 10) {
+                if isGoogleLoading {
+                    ProgressView()
+                        .progressViewStyle(.circular)
+                        .tint(Color(red: 0.2, green: 0.2, blue: 0.2))
+                        .frame(width: 20, height: 20)
+                } else {
+                    // Google "G" Icon aus SF Symbols Buchstaben zusammengebaut
+                    ZStack {
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 20, height: 20)
+                        Text("G")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(Color(red: 0.26, green: 0.52, blue: 0.96))
+                    }
+                }
+                Text("Mit Google anmelden")
+                    .font(.system(size: 17, weight: .medium))
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 54)
+            .background(colorScheme == .dark ? Color(white: 0.15) : Color.white)
+            .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.2))
+            .clipShape(RoundedRectangle(cornerRadius: AppSpacing.buttonRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: AppSpacing.buttonRadius, style: .continuous)
+                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+            )
+        }
+        .disabled(isGoogleLoading)
+        .padding(.horizontal, AppSpacing.xxl)
     }
 
     // MARK: - Logic
@@ -140,6 +182,33 @@ struct SignInView: View {
                 return
             }
             errorMessage = "Anmeldung fehlgeschlagen: \(error.localizedDescription)"
+        }
+    }
+
+    private func handleGoogleSignIn() async {
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let rootViewController = windowScene.windows.first?.rootViewController else {
+            errorMessage = "Anmeldung nicht möglich."
+            return
+        }
+        isGoogleLoading = true
+        errorMessage = nil
+        defer { isGoogleLoading = false }
+
+        do {
+            let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController)
+            guard let idToken = result.user.idToken?.tokenString else {
+                errorMessage = "Google ID-Token fehlt."
+                return
+            }
+            let email = result.user.profile?.email
+            let displayName = result.user.profile?.name
+            try await sessionStore.signInWithGoogle(idToken: idToken, email: email, displayName: displayName)
+        } catch {
+            if (error as NSError).code == GIDSignInError.canceled.rawValue {
+                return
+            }
+            errorMessage = "Google Anmeldung fehlgeschlagen: \(error.localizedDescription)"
         }
     }
 }

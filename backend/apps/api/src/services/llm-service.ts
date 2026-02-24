@@ -11,6 +11,11 @@ export interface ParsedReceiptLine {
   confidence: "high" | "medium" | "low";
 }
 
+interface LoggerLike {
+  debug: (obj: unknown, msg?: string) => void;
+  warn: (obj: unknown, msg?: string) => void;
+}
+
 const SYSTEM_PROMPT = `Du bist ein Experte für Schweizer Supermarkt-Kassenzettel (Migros, Coop, Aldi, Lidl, Denner).
 Deine Aufgabe: Extrahiere ALLE Produkte aus OCR-Daten eines Kassenzettels.
 
@@ -39,7 +44,7 @@ Ignorieren (KEINE Produkte): Totale, Zahlungen, MwSt, Barcodes, Header, Footer, 
 
 Antwortformat: Gib ausschliesslich ein JSON-Array zurück, keine Erklärungen.`;
 
-function buildUserPrompt(lines: string[], priceList: number[], totalList: number[]): string {
+function buildUserPrompt(lines: string[], priceList: number[]): string {
   const numbered = lines.map((l, i) => `Zeile ${i + 1}: "${l}"`).join("\n");
 
   const estimatedCount = estimateProductCount(lines);
@@ -176,41 +181,6 @@ function extractJSONRaw(raw: string): any[] {
   return items;
 }
 
-function extractJSON(raw: string): ParsedReceiptLine[] {
-  // The LLM might wrap in ```json or return an object with an array
-  let cleaned = raw.trim();
-  cleaned = cleaned.replace(/^```json?\s*/i, "").replace(/```\s*$/, "");
-
-  let parsed: any;
-  try {
-    parsed = JSON.parse(cleaned);
-  } catch {
-    // Try to find JSON array in the response
-    const match = cleaned.match(/\[[\s\S]*\]/);
-    if (match) {
-      parsed = JSON.parse(match[0]);
-    } else {
-      throw new Error("Could not parse LLM response as JSON");
-    }
-  }
-
-  // Handle both {"items":[...]} and [...] formats
-  const items: any[] = Array.isArray(parsed)
-    ? parsed
-    : parsed.items ?? parsed.lines ?? parsed.results ?? parsed.result ?? parsed.data ?? parsed.parsed ??
-      (Object.values(parsed).find((v) => Array.isArray(v)) as any[] ?? []);
-
-  return items.map((item: any) => ({
-    rawText: item.rawText ?? item.raw_text ?? "",
-    productName: item.productName ?? item.product_name ?? item.name ?? "",
-    brand: item.brand ?? null,
-    quantity: item.quantity != null ? Number(item.quantity) : null,
-    unit: item.unit ?? null,
-    unitPrice: item.unitPrice != null ? Number(item.unitPrice) : (item.unit_price != null ? Number(item.unit_price) : null),
-    category: item.category ?? null,
-    confidence: (["high", "medium", "low"].includes(item.confidence) ? item.confidence : "medium") as "high" | "medium" | "low",
-  }));
-}
 
 async function callPerplexity(
   systemPrompt: string,
@@ -283,22 +253,28 @@ export function isLLMConfigured(): boolean {
 }
 
 export async function parseReceiptLines(
-  rawLines: string[]
+  rawLines: string[],
+  logger?: LoggerLike
 ): Promise<ParsedReceiptLine[]> {
   const env = getEnv();
 
   if (!isLLMConfigured()) {
     throw new Error(
-      "No LLM configured. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, or PERPLEXITY_API_KEY."
+      "No LLM configured. Set OPENAI_API_KEY, ANTHROPIC_API_KEY, PERPLEXITY_API_KEY, or GEMINI_API_KEY."
     );
   }
 
-  const { prices: priceList, totals: totalList } = extractPriceAndTotalColumns(rawLines);
-  console.log("[DEBUG] Input lines:", rawLines.length);
-  console.log("[DEBUG] Price column:", JSON.stringify(priceList));
-  console.log("[DEBUG] Total column:", JSON.stringify(totalList));
+  const { prices: priceList, totals: totalList } = extractPriceAndTotalColumns(rawLines, logger);
+  logger?.debug(
+    {
+      inputLineCount: rawLines.length,
+      priceCount: priceList.length,
+      totalCount: totalList.length,
+    },
+    "Parsed OCR price columns"
+  );
 
-  const userPrompt = buildUserPrompt(rawLines, priceList, totalList);
+  const userPrompt = buildUserPrompt(rawLines, priceList);
   let response: string;
 
   if (env.LLM_PROVIDER === "openai" && env.OPENAI_API_KEY) {
@@ -317,9 +293,15 @@ export async function parseReceiptLines(
     throw new Error("LLM provider not configured");
   }
 
-  console.log("[DEBUG] LLM raw response (first 1500):", response.substring(0, 1500));
+  logger?.debug({ llmResponsePreview: response.substring(0, 1500) }, "LLM raw response preview");
   const rawItems = extractJSONRaw(response);
-  console.log("[DEBUG] LLM returned", rawItems.length, "items:", rawItems.map((p: any) => `${p.productName} (qty=${p.quantity}, pos=${p.position})`).join(" | "));
+  logger?.debug(
+    {
+      llmItemCount: rawItems.length,
+      items: rawItems.map((p: any) => `${p.productName} (qty=${p.quantity}, pos=${p.position})`),
+    },
+    "LLM parsed items"
+  );
 
   let sorted = rawItems;
   if (rawItems.some((r: any) => r.position != null)) {
@@ -332,7 +314,7 @@ export async function parseReceiptLines(
     brand: item.brand ?? null,
     quantity: item.quantity != null ? Number(item.quantity) : null,
     unit: item.unit ?? null,
-    unitPrice: item.unitPrice != null ? Number(item.unitPrice) : null,
+    unitPrice: item.unitPrice != null ? Number(item.unitPrice) : (item.unit_price != null ? Number(item.unit_price) : null),
     category: item.category ?? null,
     confidence: (["high", "medium", "low"].includes(item.confidence) ? item.confidence : "medium") as ParsedReceiptLine["confidence"],
   }));
@@ -343,7 +325,7 @@ export async function parseReceiptLines(
     const key = item.productName.toLowerCase().trim();
     const count = seen.get(key) ?? 0;
     if (count >= 2) {
-      console.log("[WARN] Duplicate product removed (3rd+):", item.productName);
+      logger?.warn({ productName: item.productName }, "Duplicate product removed (3rd+)");
       continue;
     }
     seen.set(key, count + 1);
@@ -353,7 +335,7 @@ export async function parseReceiptLines(
   const final = deduped;
 
   if (priceList.length > 0) {
-    assignPrices(final, priceList, totalList);
+    assignPrices(final, priceList, totalList, logger);
   }
 
   return final;
@@ -362,7 +344,8 @@ export async function parseReceiptLines(
 function assignPrices(
   items: ParsedReceiptLine[],
   priceList: number[],
-  totalList: number[]
+  totalList: number[],
+  logger?: LoggerLike
 ): void {
   if (items.length === priceList.length) {
     for (let i = 0; i < items.length; i++) {
@@ -372,7 +355,10 @@ function assignPrices(
         items[i].quantity = Math.round(total / priceList[i]);
       }
     }
-    console.log("[DEBUG] Exact price match:", items.map(p => `${p.productName} ${p.unitPrice}`).join(" | "));
+    logger?.debug(
+      { mode: "exact", items: items.map(p => `${p.productName} ${p.unitPrice}`) },
+      "Assigned prices to parsed items"
+    );
     return;
   }
 
@@ -380,21 +366,49 @@ function assignPrices(
   const llmCoverage = llmHasPrices / items.length;
 
   if (llmCoverage >= 0.8) {
-    console.log("[DEBUG] Using LLM-assigned prices:", llmHasPrices, "/", items.length, "have prices (coverage", (llmCoverage * 100).toFixed(0) + "%)");
+    logger?.debug(
+      { mode: "llm", llmHasPrices, itemCount: items.length, coverage: llmCoverage },
+      "Using LLM-assigned prices"
+    );
     return;
   }
 
   if (llmCoverage >= 0.5) {
     const missing = items.filter(i => !i.unitPrice || i.unitPrice <= 0);
-    const usedPrices = new Set(items.filter(i => i.unitPrice && i.unitPrice > 0).map(i => i.unitPrice));
-    const unusedOCR = priceList.filter(p => !usedPrices.has(p));
+    // Count how often each price was already assigned by the LLM
+    const usedPriceCounts = new Map<number, number>();
+    for (const item of items) {
+      if (item.unitPrice && item.unitPrice > 0) {
+        usedPriceCounts.set(item.unitPrice, (usedPriceCounts.get(item.unitPrice) ?? 0) + 1);
+      }
+    }
+    // Build list of OCR prices not yet consumed, respecting duplicate prices
+    const remainingCounts = new Map(usedPriceCounts);
+    const unusedOCR: number[] = [];
+    for (const p of priceList) {
+      const used = remainingCounts.get(p) ?? 0;
+      if (used > 0) {
+        remainingCounts.set(p, used - 1);
+      } else {
+        unusedOCR.push(p);
+      }
+    }
     let ui = 0;
     for (const item of missing) {
       if (ui < unusedOCR.length) {
         item.unitPrice = unusedOCR[ui++];
       }
     }
-    console.log("[DEBUG] LLM prices + gap-fill:", llmHasPrices, "LLM +", ui, "OCR gap-fill →", items.filter(i => i.unitPrice && i.unitPrice > 0).length, "/", items.length);
+    logger?.debug(
+      {
+        mode: "llm-gap-fill",
+        llmHasPrices,
+        gapFilledCount: ui,
+        finalPricedCount: items.filter(i => i.unitPrice && i.unitPrice > 0).length,
+        itemCount: items.length,
+      },
+      "Using LLM prices with OCR gap fill"
+    );
     return;
   }
 
@@ -412,16 +426,22 @@ function assignPrices(
       }
       pi++;
     }
-    console.log("[DEBUG] Sequential price assignment:", pi, "prices →", iLen, "products");
+    logger?.debug(
+      { mode: "sequential", assignedPrices: pi, productCount: iLen },
+      "Sequential price assignment applied"
+    );
     return;
   }
 
-  console.log("[DEBUG] Price count too different: products=", iLen, "prices=", pLen, "— keeping LLM prices");
+  logger?.debug(
+    { mode: "fallback", productCount: iLen, priceCount: pLen },
+    "Price count mismatch, keeping LLM prices"
+  );
 }
 
 function extractOCRNumbers(line: string): number[] {
   const results: number[] = [];
-  const pattern = /(\d+)[.,:](\d{2})(?!\d)|\.(\d{2})(?!\d)/g;
+  const pattern = /(\d+)[.,](\d{2})(?!\d)|\.(\d{2})(?!\d)/g;
   let match;
   while ((match = pattern.exec(line)) !== null) {
     let val: number;
@@ -437,7 +457,7 @@ function extractOCRNumbers(line: string): number[] {
   return results;
 }
 
-function extractPriceAndTotalColumns(lines: string[]): { prices: number[]; totals: number[] } {
+function extractPriceAndTotalColumns(lines: string[], logger?: LoggerLike): { prices: number[]; totals: number[] } {
   const candidates: { line: string; numbers: number[]; hasPreis: boolean; hasTotal: boolean }[] = [];
 
   for (const line of lines) {
@@ -472,7 +492,7 @@ function extractPriceAndTotalColumns(lines: string[]): { prices: number[]; total
   let prices = stripTrailingSum(preisCandidate.numbers);
 
   if (prices.length < 5) {
-    console.log("[DEBUG] Too few prices after extraction:", prices.length, "— falling back to no-column mode");
+    logger?.debug({ extractedPrices: prices.length }, "Too few prices after extraction");
     return { prices: [], totals: [] };
   }
 
@@ -494,12 +514,12 @@ function extractPriceAndTotalColumns(lines: string[]): { prices: number[]; total
         [prices, totals] = [totals, prices];
       }
 
-      console.log("[DEBUG] Dual-column mode: prices=", prices.length, "totals=", totals.length);
+      logger?.debug({ prices: prices.length, totals: totals.length }, "Using dual-column mode");
       return { prices, totals };
     }
   }
 
-  console.log("[DEBUG] Single-column mode (prices only):", prices.length, "prices");
+  logger?.debug({ prices: prices.length }, "Using single-column mode");
   return { prices, totals: prices.map(() => 0) };
 }
 
@@ -510,7 +530,7 @@ function stripTrailingSum(numbers: number[]): number[] {
     const slice = numbers.slice(0, cut);
     const last = slice[slice.length - 1];
     const sumRest = slice.slice(0, -1).reduce((a, b) => a + b, 0);
-    if (Math.abs(last - sumRest) < 1.0) {
+    if (Math.abs(last - sumRest) < 0.05) {
       return slice.slice(0, -1);
     }
   }

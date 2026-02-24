@@ -47,7 +47,104 @@ export async function verifySessionToken(token: string): Promise<{ userId: strin
   }
 }
 
+const googleAuthSchema = z.object({
+  idToken: z.string(),
+  displayName: z.string().nullable().optional(),
+});
+
+async function verifyGoogleToken(
+  idToken: string,
+  clientId: string
+): Promise<{ sub: string; email?: string; name?: string }> {
+  const res = await fetch(
+    `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`
+  );
+  if (!res.ok) {
+    throw new Error(`Google tokeninfo request failed: ${res.status}`);
+  }
+  const data: any = await res.json();
+  if (data.error) {
+    throw new Error(`Invalid Google ID token: ${data.error}`);
+  }
+  if (data.aud !== clientId) {
+    throw new Error("Google token audience mismatch");
+  }
+  return { sub: data.sub, email: data.email, name: data.name };
+}
+
 export async function authRoutes(app: FastifyInstance) {
+  app.post("/v1/auth/google", async (request, reply) => {
+    const env = getEnv();
+    if (!env.GOOGLE_CLIENT_ID) {
+      return reply.status(503).send({
+        error: "Google Sign-In not configured",
+        message: "Set GOOGLE_CLIENT_ID environment variable.",
+      });
+    }
+
+    const parsed = googleAuthSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({
+        error: "Invalid request body",
+        details: parsed.error.flatten(),
+      });
+    }
+
+    const body = parsed.data;
+    const prisma = getPrisma();
+
+    let googleUserId: string;
+    let verifiedEmail: string | undefined;
+    let verifiedName: string | undefined;
+
+    try {
+      const verified = await verifyGoogleToken(body.idToken, env.GOOGLE_CLIENT_ID);
+      if (!verified.sub) {
+        request.log.warn({ verified }, "Google tokeninfo returned no sub");
+        return reply.status(401).send({ error: "Google token missing sub claim" });
+      }
+      googleUserId = verified.sub;
+      verifiedEmail = verified.email;
+      verifiedName = verified.name;
+    } catch (err: any) {
+      request.log.warn({ err: err.message }, "Google token verification failed");
+      return reply.status(401).send({
+        error: "Invalid Google ID token",
+        detail: err.message,
+      });
+    }
+
+    let user: Awaited<ReturnType<typeof prisma.user.upsert>>;
+    try {
+      user = await prisma.user.upsert({
+        where: { googleUserId },
+        create: {
+          googleUserId,
+          email: verifiedEmail,
+          displayName: verifiedName ?? body.displayName,
+        },
+        update: {
+          ...(verifiedEmail ? { email: verifiedEmail } : {}),
+          ...(verifiedName ? { displayName: verifiedName } : {}),
+        },
+      });
+    } catch (err: any) {
+      request.log.error({ err }, "DB upsert failed for Google user");
+      return reply.status(500).send({ error: "Database error", message: err.message });
+    }
+
+    const sessionToken = await createSessionToken(user.id, env.JWT_SECRET);
+
+    return reply.send({
+      token: sessionToken,
+      user: {
+        id: user.id,
+        displayName: user.displayName,
+        email: user.email,
+      },
+    });
+  });
+
   app.post("/v1/auth/apple", async (request, reply) => {
     const parsed = appleAuthSchema.safeParse(request.body);
     if (!parsed.success) {

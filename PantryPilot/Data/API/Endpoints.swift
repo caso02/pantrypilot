@@ -57,4 +57,14 @@ enum Endpoints {
             retryPolicy: RetryPolicy(maxAttempts: 2, baseDelay: 1.0, maxDelay: 5.0, backoffMultiplier: 2.0)
         )
     }
+
+    static func authGoogle(body: Data) -> Endpoint {
+        Endpoint(
+            path: "/v1/auth/google",
+            method: .post,
+            headers: ["Content-Type": "application/json"],
+            body: body,
+            retryPolicy: RetryPolicy(maxAttempts: 2, baseDelay: 1.0, maxDelay: 5.0, backoffMultiplier: 2.0)
+        )
+    }
 }

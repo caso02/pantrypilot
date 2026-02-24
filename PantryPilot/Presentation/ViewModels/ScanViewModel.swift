@@ -327,7 +327,13 @@ final class ScanViewModel {
         )
         let persisted = PersistedReceipt.from(receipt)
         context.insert(persisted)
-        try? context.save()
+        do {
+            try context.save()
+        } catch {
+            AppLogger.persistence.error("Failed to persist receipt: \(error.localizedDescription)")
+            state = .error("Kassenzettel konnte nicht gespeichert werden. Bitte erneut versuchen.")
+            return
+        }
 
         await store.addItems(inventoryItems)
         notificationManager.scheduleExpiryNotifications(for: inventoryItems)

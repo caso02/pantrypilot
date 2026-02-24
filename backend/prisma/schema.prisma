@@ -1,5 +1,6 @@
 generator client {
   provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
 }
 
 datasource db {
@@ -8,10 +9,11 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(uuid()) @db.Uuid
-  appleUserId String   @unique @map("apple_user_id")
-  email       String?
-  displayName String?  @map("display_name")
+  id           String   @id @default(uuid()) @db.Uuid
+  appleUserId  String?  @unique @map("apple_user_id")
+  googleUserId String?  @unique @map("google_user_id")
+  email        String?
+  displayName  String?  @map("display_name")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 

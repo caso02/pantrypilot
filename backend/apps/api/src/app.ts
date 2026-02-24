@@ -1,4 +1,7 @@
 import Fastify from "fastify";
+import cors from "@fastify/cors";
+import helmet from "@fastify/helmet";
+import rateLimit from "@fastify/rate-limit";
 import { getEnv } from "./config/env.js";
 import { healthRoutes } from "./routes/health.js";
 import { productRoutes } from "./routes/products.js";
@@ -17,11 +20,26 @@ export function buildApp() {
     },
   });
 
+  app.register(cors, {
+    origin: true,
+    credentials: true,
+  });
+
+  app.register(helmet, {
+    contentSecurityPolicy: false,
+  });
+
+  app.register(rateLimit, {
+    global: true,
+    max: 200,
+    timeWindow: "1 minute",
+  });
+
   // Optional API key auth
   if (env.API_KEY) {
     app.addHook("onRequest", async (request, reply) => {
-      // Skip auth for health endpoint
-      if (request.url === "/v1/health" || request.url === "/v1/auth/apple") return;
+      // Skip auth for health and auth endpoints
+      if (request.url === "/v1/health" || request.url === "/v1/auth/apple" || request.url === "/v1/auth/google") return;
 
       const key = request.headers["x-api-key"];
       if (key !== env.API_KEY) {

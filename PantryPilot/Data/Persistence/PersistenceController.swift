@@ -21,7 +21,14 @@ final class PersistenceController {
             container = try ModelContainer(for: schema, configurations: [config])
             AppLogger.persistence.info("SwiftData container initialized")
         } catch {
-            fatalError("Failed to create ModelContainer: \(error)")
+            AppLogger.persistence.error("Failed to create persistent ModelContainer: \(error.localizedDescription)")
+            let fallback = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            do {
+                container = try ModelContainer(for: schema, configurations: [fallback])
+                AppLogger.persistence.warning("Falling back to in-memory SwiftData container")
+            } catch {
+                preconditionFailure("Critical: unable to initialize any ModelContainer (\(error.localizedDescription))")
+            }
         }
     }
 
@@ -49,7 +56,13 @@ final class PersistenceController {
         do {
             container = try ModelContainer(for: schema, configurations: [config])
         } catch {
-            fatalError("Failed to create ModelContainer: \(error)")
+            AppLogger.persistence.error("Failed to create preview ModelContainer: \(error.localizedDescription)")
+            let fallback = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            do {
+                container = try ModelContainer(for: schema, configurations: [fallback])
+            } catch {
+                preconditionFailure("Critical: unable to initialize preview ModelContainer (\(error.localizedDescription))")
+            }
         }
     }
 }

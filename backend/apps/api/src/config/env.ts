@@ -16,7 +16,8 @@ const envSchema = z.object({
   PERPLEXITY_API_KEY: z.string().optional(),
   GEMINI_API_KEY: z.string().optional(),
   LLM_MODEL: z.string().optional(),
-  JWT_SECRET: z.string().default("pantrypilot-dev-secret-change-in-prod"),
+  GOOGLE_CLIENT_ID: z.string().optional(),
+  JWT_SECRET: z.string().min(32),
   APPLE_BUNDLE_ID: z.string().default("com.pantrypilot.app"),
 });
 

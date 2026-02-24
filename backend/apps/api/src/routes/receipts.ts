@@ -32,12 +32,12 @@ export async function receiptRoutes(app: FastifyInstance): Promise<void> {
       return reply.status(503).send({
         error: "LLM not configured",
         message:
-          "Set OPENAI_API_KEY or ANTHROPIC_API_KEY to enable receipt parsing.",
+          "Set OPENAI_API_KEY, ANTHROPIC_API_KEY, PERPLEXITY_API_KEY, or GEMINI_API_KEY to enable receipt parsing.",
       });
     }
 
     const inLines = (request.body as any)?.lines ?? [];
-    request.log.info({ lineCount: inLines.length, lines: inLines }, "DEBUG all incoming lines");
+    request.log.debug({ lineCount: inLines.length }, "Receipt parse request received");
 
     const parsed = parseBodySchema.safeParse(request.body);
     if (!parsed.success) {
@@ -51,7 +51,7 @@ export async function receiptRoutes(app: FastifyInstance): Promise<void> {
 
     let llmResults: ParsedReceiptLine[];
     try {
-      llmResults = await parseReceiptLines(lines);
+      llmResults = await parseReceiptLines(lines, request.log);
     } catch (err: any) {
       request.log.error({ err }, "LLM parsing failed");
       return reply.status(502).send({
@@ -60,12 +60,6 @@ export async function receiptRoutes(app: FastifyInstance): Promise<void> {
       });
     }
 
-
-    // Ensure we have results for all input lines
-    const resultsMap = new Map<string, ParsedReceiptLine>();
-    for (const r of llmResults) {
-      resultsMap.set(r.rawText, r);
-    }
 
     const output: ParsedAndMatchedLine[] = [];
 
