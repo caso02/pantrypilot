@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "tsx watch --env-file=.env src/server.ts",
     "build": "npm run prisma:generate && tsc",
-    "start": "node dist/server.js",
+    "start": "prisma migrate deploy --schema=../../prisma/schema.prisma && node dist/server.js",
+    "postinstall": "prisma generate --schema=../../prisma/schema.prisma",
     "test": "vitest run",
     "test:watch": "vitest",
     "prisma:generate": "prisma generate --schema=../../prisma/schema.prisma",
