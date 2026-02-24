@@ -7,4 +7,5 @@ enum AppLogger {
     static let persistence = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.pantrypilot", category: "persistence")
     static let camera = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.pantrypilot", category: "camera")
     static let notifications = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.pantrypilot", category: "notifications")
+    static let ocr = Logger(subsystem: Bundle.main.bundleIdentifier ?? "com.pantrypilot", category: "ocr")
 }

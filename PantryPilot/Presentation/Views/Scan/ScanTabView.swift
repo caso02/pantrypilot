@@ -7,6 +7,10 @@ struct ScanTabView: View {
     @Environment(\.modelContext) private var modelContext
     @State private var showIgnoreToast = false
     @State private var lastIgnoredItem: ScanViewModel.EditableLineItem?
+    let isAuthenticated: Bool
+    let isGoogleAccount: Bool
+    let profileImageURL: String?
+    let onOpenAccount: () -> Void
 
     init(
         receiptRepository: ReceiptRepositoryProtocol,
@@ -15,7 +19,11 @@ struct ScanTabView: View {
         store: InventoryStore,
         useMockAPI: Bool,
         notificationManager: NotificationManager,
-        ocrService: ReceiptOCRService
+        ocrService: ReceiptOCRService,
+        isAuthenticated: Bool = false,
+        isGoogleAccount: Bool = false,
+        profileImageURL: String? = nil,
+        onOpenAccount: @escaping () -> Void = {}
     ) {
         _viewModel = State(initialValue: ScanViewModel(
             receiptRepository: receiptRepository,
@@ -26,6 +34,10 @@ struct ScanTabView: View {
             notificationManager: notificationManager,
             ocrService: ocrService
         ))
+        self.isAuthenticated = isAuthenticated
+        self.isGoogleAccount = isGoogleAccount
+        self.profileImageURL = profileImageURL
+        self.onOpenAccount = onOpenAccount
     }
 
     private var currentStep: Int {
@@ -61,6 +73,16 @@ struct ScanTabView: View {
                 }
             }
             .navigationTitle("Scan")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ProfileToolbarButton(
+                        isAuthenticated: isAuthenticated,
+                        isGoogleAccount: isGoogleAccount,
+                        profileImageURL: profileImageURL,
+                        action: onOpenAccount
+                    )
+                }
+            }
             .sheet(item: $viewModel.editingItem) { item in
                 EditLineItemSheet(item: item) { edited in
                     viewModel.saveEdit(edited)

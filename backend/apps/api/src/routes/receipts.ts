@@ -37,7 +37,7 @@ export async function receiptRoutes(app: FastifyInstance): Promise<void> {
     }
 
     const inLines = (request.body as any)?.lines ?? [];
-    request.log.debug({ lineCount: inLines.length }, "Receipt parse request received");
+    request.log.info({ lineCount: inLines.length, lines: inLines }, "Receipt parse request received");
 
     const parsed = parseBodySchema.safeParse(request.body);
     if (!parsed.success) {

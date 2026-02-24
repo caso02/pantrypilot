@@ -5,9 +5,23 @@ struct InsightsView: View {
     @State private var viewModel: InsightsViewModel
     @Query(sort: \PersistedReceipt.date, order: .reverse) private var allReceipts: [PersistedReceipt]
     @State private var showAllReceipts = false
+    let isAuthenticated: Bool
+    let isGoogleAccount: Bool
+    let profileImageURL: String?
+    let onOpenAccount: () -> Void
 
-    init(store: InventoryStore) {
+    init(
+        store: InventoryStore,
+        isAuthenticated: Bool = false,
+        isGoogleAccount: Bool = false,
+        profileImageURL: String? = nil,
+        onOpenAccount: @escaping () -> Void = {}
+    ) {
         _viewModel = State(initialValue: InsightsViewModel(store: store))
+        self.isAuthenticated = isAuthenticated
+        self.isGoogleAccount = isGoogleAccount
+        self.profileImageURL = profileImageURL
+        self.onOpenAccount = onOpenAccount
     }
 
     var body: some View {
@@ -34,6 +48,16 @@ struct InsightsView: View {
                 }
             }
             .navigationTitle("Übersicht")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ProfileToolbarButton(
+                        isAuthenticated: isAuthenticated,
+                        isGoogleAccount: isGoogleAccount,
+                        profileImageURL: profileImageURL,
+                        action: onOpenAccount
+                    )
+                }
+            }
             .navigationDestination(isPresented: $showAllReceipts) {
                 ReceiptHistoryView()
             }

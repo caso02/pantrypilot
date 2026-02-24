@@ -3,6 +3,7 @@ import Foundation
 struct SyncPushPayload: Codable {
     let inventory: [SyncInventoryItem]
     let shoppingList: [SyncShoppingItem]
+    let receipts: [SyncReceipt]
 }
 
 struct SyncInventoryItem: Codable {
@@ -34,6 +35,42 @@ struct SyncPushResponse: Codable {
 struct SyncPullResponse: Codable {
     let inventory: [SyncInventoryItem]
     let shoppingList: [SyncShoppingItem]
+    let receipts: [SyncReceipt]
+
+    init(
+        inventory: [SyncInventoryItem],
+        shoppingList: [SyncShoppingItem],
+        receipts: [SyncReceipt]
+    ) {
+        self.inventory = inventory
+        self.shoppingList = shoppingList
+        self.receipts = receipts
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        inventory = try container.decode([SyncInventoryItem].self, forKey: .inventory)
+        shoppingList = try container.decode([SyncShoppingItem].self, forKey: .shoppingList)
+        receipts = try container.decodeIfPresent([SyncReceipt].self, forKey: .receipts) ?? []
+    }
+}
+
+struct SyncReceipt: Codable {
+    let clientId: String
+    let merchant: String
+    let date: String
+    let totalAmount: Double?
+    let itemCount: Int
+    let lineItems: [SyncReceiptLineItem]
+}
+
+struct SyncReceiptLineItem: Codable {
+    let clientId: String
+    let name: String
+    let quantity: Double
+    let unit: String
+    let unitPrice: Double?
+    let category: String?
 }
 
 @MainActor
@@ -47,35 +84,12 @@ final class SyncService {
     }
 
     func pushToCloud() async {
-        let formatter = ISO8601DateFormatter()
-
-        let inventoryItems = store.items.map { item in
-            SyncInventoryItem(
-                clientId: item.id.uuidString,
-                canonicalName: item.canonicalName,
-                quantity: item.quantity,
-                unit: item.unit,
-                location: item.location.rawValue,
-                purchaseDate: formatter.string(from: item.purchaseDate),
-                estimatedExpiryDate: item.estimatedExpiryDate.map { formatter.string(from: $0) },
-                opened: item.opened,
-                notes: item.notes,
-                category: item.category?.rawValue
-            )
-        }
-
-        let shoppingItems = store.shoppingList.map { item in
-            SyncShoppingItem(
-                clientId: item.id.uuidString,
-                name: item.name,
-                targetQuantity: item.targetQuantity,
-                unit: item.unit,
-                addedAt: formatter.string(from: item.addedAt),
-                isCompleted: item.isCompleted
-            )
-        }
-
-        let payload = SyncPushPayload(inventory: inventoryItems, shoppingList: shoppingItems)
+        let snapshot = store.localSyncSnapshot()
+        let payload = SyncPushPayload(
+            inventory: snapshot.inventory,
+            shoppingList: snapshot.shoppingList,
+            receipts: snapshot.receipts
+        )
 
         guard let body = try? JSONEncoder().encode(payload) else { return }
 
@@ -90,7 +104,10 @@ final class SyncService {
     func pullFromCloud() async {
         do {
             let response: SyncPullResponse = try await networkClient.request(Endpoints.syncPull())
-            AppLogger.general.info("Sync pull: \(response.inventory.count) inventory, \(response.shoppingList.count) shopping items")
+            await store.applyCloudSnapshot(response)
+            AppLogger.general.info(
+                "Sync pull restored: \(response.inventory.count) inventory, \(response.shoppingList.count) shopping, \(response.receipts.count) receipts"
+            )
         } catch {
             AppLogger.general.error("Sync pull failed: \(error.localizedDescription)")
         }

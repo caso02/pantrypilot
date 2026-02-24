@@ -7,7 +7,7 @@ struct ReceiptParseRequest: Codable {
     let autoMatch: Bool
     let autoLearn: Bool
 
-    init(lines: [String], autoMatch: Bool = true, autoLearn: Bool = true) {
+    init(lines: [String], autoMatch: Bool = true, autoLearn: Bool = false) {
         self.lines = lines
         self.autoMatch = autoMatch
         self.autoLearn = autoLearn

@@ -4,9 +4,23 @@ struct InventoryView: View {
     @State private var viewModel: InventoryViewModel
     @State private var expandedCategories: Set<String> = []
     @State private var showDeleteToast = false
+    let isAuthenticated: Bool
+    let isGoogleAccount: Bool
+    let profileImageURL: String?
+    let onOpenAccount: () -> Void
 
-    init(store: InventoryStore) {
+    init(
+        store: InventoryStore,
+        isAuthenticated: Bool = false,
+        isGoogleAccount: Bool = false,
+        profileImageURL: String? = nil,
+        onOpenAccount: @escaping () -> Void = {}
+    ) {
         _viewModel = State(initialValue: InventoryViewModel(store: store))
+        self.isAuthenticated = isAuthenticated
+        self.isGoogleAccount = isGoogleAccount
+        self.profileImageURL = profileImageURL
+        self.onOpenAccount = onOpenAccount
     }
 
     var body: some View {
@@ -59,7 +73,15 @@ struct InventoryView: View {
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    locationPicker
+                    HStack(spacing: AppSpacing.s) {
+                        locationPicker
+                        ProfileToolbarButton(
+                            isAuthenticated: isAuthenticated,
+                            isGoogleAccount: isGoogleAccount,
+                            profileImageURL: profileImageURL,
+                            action: onOpenAccount
+                        )
+                    }
                 }
             }
             .refreshable { await viewModel.loadData() }
@@ -742,6 +764,7 @@ private struct PreviewInventoryRepository: InventoryRepositoryProtocol {
     }
     func save(_ item: InventoryItem) async throws {}
     func saveAll(_ items: [InventoryItem]) async throws {}
+    func replaceAll(with items: [InventoryItem]) async throws {}
     func delete(_ item: InventoryItem) async throws {}
     func update(_ item: InventoryItem) async throws {}
     func syncWithRemote() async throws {}

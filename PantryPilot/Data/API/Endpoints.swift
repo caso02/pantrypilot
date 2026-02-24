@@ -18,7 +18,7 @@ enum Endpoints {
             headers: ["Content-Type": "application/json"],
             body: data,
             retryPolicy: RetryPolicy(maxAttempts: 2, baseDelay: 2.0, maxDelay: 15.0, backoffMultiplier: 2.0),
-            timeoutInterval: 90
+            timeoutInterval: 180
         )
     }
 

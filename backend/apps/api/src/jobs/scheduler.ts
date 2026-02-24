@@ -1,6 +1,12 @@
 import { getSyncQueue } from "./queues.js";
+import { getEnv } from "../config/env.js";
 
 export async function scheduleNightlyRefresh(): Promise<void> {
+  if (!getEnv().ENABLE_BACKGROUND_JOBS) {
+    console.log("[scheduler] Background jobs disabled, skip nightly refresh schedule");
+    return;
+  }
+
   const queue = getSyncQueue();
 
   // Remove existing repeatable if present, then re-add
@@ -24,6 +30,10 @@ export async function scheduleNightlyRefresh(): Promise<void> {
 }
 
 export async function enqueueSearchEnrich(query: string): Promise<void> {
+  if (!getEnv().ENABLE_BACKGROUND_JOBS) {
+    return;
+  }
+
   const queue = getSyncQueue();
   await queue.add("search-enrich", { type: "search-enrich", query }, {
     jobId: `enrich-${query.toLowerCase().replace(/\s+/g, "-")}`,

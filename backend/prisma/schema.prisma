@@ -19,6 +19,7 @@ model User {
 
   syncItems         SyncInventoryItem[]
   syncShoppingItems SyncShoppingItem[]
+  syncReceipts      SyncReceipt[]
 
   @@map("users")
 }
@@ -59,6 +60,40 @@ model SyncShoppingItem {
 
   @@unique([userId, clientId])
   @@map("sync_shopping_items")
+}
+
+model SyncReceipt {
+  id          String                @id @default(uuid()) @db.Uuid
+  userId      String                @map("user_id") @db.Uuid
+  clientId    String                @map("client_id")
+  merchant    String
+  date        DateTime
+  totalAmount Float?                @map("total_amount")
+  itemCount   Int                   @map("item_count")
+  updatedAt   DateTime              @updatedAt @map("updated_at")
+
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lineItems SyncReceiptLineItem[]
+
+  @@unique([userId, clientId])
+  @@map("sync_receipts")
+}
+
+model SyncReceiptLineItem {
+  id          String   @id @default(uuid()) @db.Uuid
+  receiptId   String   @map("receipt_id") @db.Uuid
+  clientId    String   @map("client_id")
+  name        String
+  quantity    Float
+  unit        String
+  unitPrice   Float?   @map("unit_price")
+  category    String?
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  receipt SyncReceipt @relation(fields: [receiptId], references: [id], onDelete: Cascade)
+
+  @@unique([receiptId, clientId])
+  @@map("sync_receipt_line_items")
 }
 
 model Merchant {

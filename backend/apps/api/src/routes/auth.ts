@@ -114,6 +114,12 @@ export async function authRoutes(app: FastifyInstance) {
       });
     }
 
+    const existingUser = await prisma.user.findUnique({
+      where: { googleUserId },
+      select: { id: true },
+    });
+    const isNewUser = !existingUser;
+
     let user: Awaited<ReturnType<typeof prisma.user.upsert>>;
     try {
       user = await prisma.user.upsert({
@@ -137,6 +143,7 @@ export async function authRoutes(app: FastifyInstance) {
 
     return reply.send({
       token: sessionToken,
+      isNewUser,
       user: {
         id: user.id,
         displayName: user.displayName,
@@ -172,6 +179,12 @@ export async function authRoutes(app: FastifyInstance) {
       });
     }
 
+    const existingUser = await prisma.user.findUnique({
+      where: { appleUserId },
+      select: { id: true },
+    });
+    const isNewUser = !existingUser;
+
     const user = await prisma.user.upsert({
       where: { appleUserId },
       create: {
@@ -189,6 +202,7 @@ export async function authRoutes(app: FastifyInstance) {
 
     return reply.send({
       token: sessionToken,
+      isNewUser,
       user: {
         id: user.id,
         displayName: user.displayName,

@@ -195,4 +195,138 @@ final class InventoryStore {
         persistShoppingList()
         triggerSync()
     }
+
+    func localSyncSnapshot() -> (inventory: [SyncInventoryItem], shoppingList: [SyncShoppingItem], receipts: [SyncReceipt]) {
+        let formatter = ISO8601DateFormatter()
+
+        let inventoryPayload = items.map { item in
+            SyncInventoryItem(
+                clientId: item.id.uuidString,
+                canonicalName: item.canonicalName,
+                quantity: item.quantity,
+                unit: item.unit,
+                location: item.location.rawValue,
+                purchaseDate: formatter.string(from: item.purchaseDate),
+                estimatedExpiryDate: item.estimatedExpiryDate.map { formatter.string(from: $0) },
+                opened: item.opened,
+                notes: item.notes,
+                category: item.category?.rawValue
+            )
+        }
+
+        let shoppingPayload = shoppingList.map { item in
+            SyncShoppingItem(
+                clientId: item.id.uuidString,
+                name: item.name,
+                targetQuantity: item.targetQuantity,
+                unit: item.unit,
+                addedAt: formatter.string(from: item.addedAt),
+                isCompleted: item.isCompleted
+            )
+        }
+
+        var receiptPayload: [SyncReceipt] = []
+        if let ctx = modelContext {
+            do {
+                let descriptor = FetchDescriptor<PersistedReceipt>(
+                    sortBy: [SortDescriptor(\.date, order: .reverse)]
+                )
+                let receipts = try ctx.fetch(descriptor)
+                receiptPayload = receipts.map { receipt in
+                    SyncReceipt(
+                        clientId: receipt.receiptId.uuidString,
+                        merchant: receipt.merchant,
+                        date: formatter.string(from: receipt.date),
+                        totalAmount: receipt.totalAmount,
+                        itemCount: receipt.itemCount,
+                        lineItems: receipt.lineItems.map { line in
+                            SyncReceiptLineItem(
+                                clientId: line.lineItemId.uuidString,
+                                name: line.name,
+                                quantity: line.quantity,
+                                unit: line.unit,
+                                unitPrice: line.unitPrice,
+                                category: line.categoryRaw
+                            )
+                        }
+                    )
+                }
+            } catch {
+                AppLogger.persistence.error("Failed to fetch receipts for sync snapshot: \(error.localizedDescription)")
+            }
+        }
+
+        return (inventoryPayload, shoppingPayload, receiptPayload)
+    }
+
+    func applyCloudSnapshot(_ response: SyncPullResponse) async {
+        let formatter = ISO8601DateFormatter()
+
+        let restoredInventory = response.inventory.map { remote in
+            InventoryItem(
+                id: UUID(uuidString: remote.clientId) ?? UUID(),
+                canonicalName: remote.canonicalName,
+                quantity: remote.quantity,
+                unit: remote.unit,
+                location: StorageLocation(rawValue: remote.location) ?? .pantry,
+                purchaseDate: formatter.date(from: remote.purchaseDate) ?? .now,
+                estimatedExpiryDate: remote.estimatedExpiryDate.flatMap { formatter.date(from: $0) },
+                opened: remote.opened,
+                notes: remote.notes,
+                category: remote.category.flatMap(FoodCategory.init(rawValue:))
+            )
+        }
+
+        do {
+            try await repository.replaceAll(with: restoredInventory)
+            items = restoredInventory
+        } catch {
+            AppLogger.persistence.error("Failed to restore inventory from cloud: \(error.localizedDescription)")
+        }
+
+        shoppingList = response.shoppingList.map { remote in
+            ShoppingListItem(
+                id: UUID(uuidString: remote.clientId) ?? UUID(),
+                name: remote.name,
+                targetQuantity: remote.targetQuantity,
+                unit: remote.unit,
+                addedAt: formatter.date(from: remote.addedAt) ?? .now,
+                isCompleted: remote.isCompleted
+            )
+        }
+        persistShoppingList()
+
+        if let ctx = modelContext {
+            do {
+                let existingReceipts = try ctx.fetch(FetchDescriptor<PersistedReceipt>())
+                for receipt in existingReceipts {
+                    ctx.delete(receipt)
+                }
+
+                for remote in response.receipts {
+                    let receipt = PersistedReceipt(
+                        receiptId: UUID(uuidString: remote.clientId) ?? UUID(),
+                        merchant: remote.merchant,
+                        date: formatter.date(from: remote.date) ?? .now,
+                        totalAmount: remote.totalAmount,
+                        itemCount: remote.itemCount,
+                        lineItems: remote.lineItems.map { line in
+                            PersistedReceiptLineItem(
+                                lineItemId: UUID(uuidString: line.clientId) ?? UUID(),
+                                name: line.name,
+                                quantity: line.quantity,
+                                unit: line.unit,
+                                unitPrice: line.unitPrice,
+                                category: line.category.flatMap(FoodCategory.init(rawValue:))
+                            )
+                        }
+                    )
+                    ctx.insert(receipt)
+                }
+                try ctx.save()
+            } catch {
+                AppLogger.persistence.error("Failed to restore receipts from cloud: \(error.localizedDescription)")
+            }
+        }
+    }
 }

@@ -8,7 +8,6 @@ struct PantryPilotApp: App {
 
     @State private var sessionStore = SessionStore()
     @State private var inventoryStore: InventoryStore
-    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     private let container: DependencyContainer
 
@@ -29,10 +28,19 @@ struct PantryPilotApp: App {
     var body: some Scene {
         WindowGroup {
             Group {
-                if !hasCompletedOnboarding {
-                    OnboardingView(hasCompletedOnboarding: $hasCompletedOnboarding)
-                } else if !sessionStore.isAuthenticated {
+                if !sessionStore.isAuthenticated {
                     SignInView(sessionStore: sessionStore)
+                } else if sessionStore.shouldShowOnboardingAfterSignIn {
+                    OnboardingView(
+                        hasCompletedOnboarding: Binding(
+                            get: { sessionStore.shouldShowOnboardingAfterSignIn },
+                            set: { completed in
+                                if completed {
+                                    sessionStore.completeOnboardingAfterSignIn()
+                                }
+                            }
+                        )
+                    )
                 } else {
                     MainTabView(
                         sessionStore: sessionStore,
@@ -41,8 +49,8 @@ struct PantryPilotApp: App {
                     )
                 }
             }
-            .animation(.easeInOut(duration: 0.3), value: hasCompletedOnboarding)
             .animation(.easeInOut(duration: 0.3), value: sessionStore.isAuthenticated)
+            .animation(.easeInOut(duration: 0.3), value: sessionStore.shouldShowOnboardingAfterSignIn)
             .onOpenURL { url in
                 GIDSignIn.sharedInstance.handle(url)
             }
@@ -56,7 +64,10 @@ struct PantryPilotApp: App {
                         store: inventoryStore
                     )
                     inventoryStore.syncService = sync
-                    Task { await sync.pushToCloud() }
+                    Task {
+                        await sync.pullFromCloud()
+                        await sync.pushToCloud()
+                    }
                 } else {
                     inventoryStore.syncService = nil
                 }

@@ -4,12 +4,27 @@ struct ShoppingListView: View {
     @State private var viewModel: ShoppingListViewModel
     @State private var showCompleted = false
     @State private var showAddedToast = false
+    let isAuthenticated: Bool
+    let isGoogleAccount: Bool
+    let profileImageURL: String?
+    let onOpenAccount: () -> Void
 
-    init(store: InventoryStore, lowStockService: LowStockSuggestionService) {
+    init(
+        store: InventoryStore,
+        lowStockService: LowStockSuggestionService,
+        isAuthenticated: Bool = false,
+        isGoogleAccount: Bool = false,
+        profileImageURL: String? = nil,
+        onOpenAccount: @escaping () -> Void = {}
+    ) {
         _viewModel = State(initialValue: ShoppingListViewModel(
             store: store,
             lowStockService: lowStockService
         ))
+        self.isAuthenticated = isAuthenticated
+        self.isGoogleAccount = isGoogleAccount
+        self.profileImageURL = profileImageURL
+        self.onOpenAccount = onOpenAccount
     }
 
     var body: some View {
@@ -55,6 +70,16 @@ struct ShoppingListView: View {
                 }
             }
             .navigationTitle("Einkaufsliste")
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ProfileToolbarButton(
+                        isAuthenticated: isAuthenticated,
+                        isGoogleAccount: isGoogleAccount,
+                        profileImageURL: profileImageURL,
+                        action: onOpenAccount
+                    )
+                }
+            }
             .sheet(isPresented: $viewModel.showAddSheet) {
                 addItemSheet
             }

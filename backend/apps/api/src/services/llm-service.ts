@@ -17,43 +17,77 @@ interface LoggerLike {
 }
 
 const SYSTEM_PROMPT = `Du bist ein Experte für Schweizer Supermarkt-Kassenzettel (Migros, Coop, Aldi, Lidl, Denner).
-Deine Aufgabe: Extrahiere ALLE Produkte aus OCR-Daten eines Kassenzettels.
+Extrahiere ALLE Produkte aus OCR-Daten und gib sie in EXAKT DER REIHENFOLGE zurück wie sie auf dem Kassenzettel stehen.
 
-WICHTIG - OCR-Spaltenformat:
-Die OCR erkennt Kassenzettel oft SPALTENWEISE statt zeilenweise:
-- Eine Zeile enthält ALLE Produktnamen hintereinander (z.B. "Erdbeeren Zwiebeln rot Bio Peperoni...")
-- Eine andere Zeile enthält ALLE Preise hintereinander
-- Die Produktnamen sind über MEHRERE OCR-Zeilen verteilt!
+OCR-SPALTENFORMAT:
+Die OCR liest Kassenzettel oft spaltenweise: eine Zeile enthält alle Produktnamen hintereinander, eine andere alle Preise. Produktnamen können über mehrere OCR-Zeilen verteilt sein.
 
 PRODUKTE TRENNEN:
-- Jeder Produktname auf einem Kassenzettel ist ein EINZELNER Artikel (z.B. "Bio Birnen Williams" ist EIN Produkt, "Zwiebeln rot" ist ein ANDERES)
-- Achte auf Migros-Kürzel: M-CL/MClass/MClas = M-Classic, M-BU/MBud = M-Budget, MBud Hostnockli = M-Budget Mostnöckli
-- Thony = Thomy, Tortell. = Tortellini, Ric. = Ricotta, Atl. = Atlantischer, VALFL = Valflora
-- "Bio Tête de Moine Rose" ist EIN Produkt (inkl. "Rose")
-- "Chiefs Pudding Choco" und "Chiefs Pudding Stracci" sind ZWEI separate Produkte
-- "YOU IPS BlumenkohlReis" ist EIN Produkt
-- "Schne12kase"/"Schnelzkäse" = "Schmelzkäse"
+- Jeder Kassenzettel-Eintrag ist ein EINZELNER Artikel ("Bio Birnen Williams" ≠ "Zwiebeln rot")
+- Migros-Kürzel: M-CL/MClass = M-Classic, M-BU/MBud = M-Budget
+- Abkürzungen: Thony→Thomy, Tortell.→Tortellini, Ric.→Ricotta, Atl.→Atlantischer, VALFL→Valflora
+- Schne12kase/Schnelzkäse → Schmelzkäse
+- "Chiefs Pudding Choco" und "Chiefs Pudding Stracci" sind ZWEI Produkte
+- KEIN Produkt: einzelne Markenname ohne Produktname ("M-Budget" allein, "M-Classic" allein), einzelne Wörter wie "Satz", "Bar", Barcodenummern
 
-MENGEN:
-- Standard-Menge = 1
-- Wenn eine Zahl direkt vor dem Produktnamen steht (z.B. "2 MBud Brötlilachs"), ist das die Menge
+MENGEN (quantity):
+- Standard = 1
+- "2 Produkt", "2x Produkt", "2 x Produkt" → quantity: 2
+- Folgezeile "2 Stk", "2 St", "2 à", "2 x 1.50" direkt nach einem Produkt → quantity: 2 für dieses Produkt
+- "6er Pack", "4-Pack", "12er Karton", "0.5 kg" → quantity: 1 (Verpackungsgrösse, nicht Stückzahl)
+- Gleiches Produkt 2× auf Kassenzettel → 2 separate Einträge mit quantity: 1 (NICHT ein Eintrag mit quantity: 2)
 
-Kategorien: Milchprodukte, Fleisch, Fisch, Gemüse, Früchte, Brot/Backwaren, Getränke, Tiefkühl, Konserven, Gewürze/Saucen, Süsswaren, Snacks, Haushalt, Hygiene, Sonstiges
+REIHENFOLGE (KRITISCH):
+- Nummeriere mit "position" (1, 2, 3, ...) in der EXAKTEN Reihenfolge der OCR-Zeilen
+- Produkte aus Zeile 1 kommen vor Produkten aus Zeile 2, usw.
+- Innerhalb einer Zeile: Reihenfolge von links nach rechts im Text
 
-Ignorieren (KEINE Produkte): Totale, Zahlungen, MwSt, Barcodes, Header, Footer, "Sie sparen", Cumulus, Filiale, Bedien., KNr, "Total CHF", "Total in EUR", "Bar CHF", "Zurück", "Zwischentotal"
+Ignorieren: Totale, Zahlungen, MwSt, Barcodes, Header, Footer, "Sie sparen", Cumulus, KNr, "Total CHF", "Bar CHF", "Zurück", "Zwischentotal"
 
-Antwortformat: Gib ausschliesslich ein JSON-Array zurück, keine Erklärungen.`;
+KEIN Halluzinieren: Extrahiere NUR Produkte die explizit im OCR-Text stehen. Erfinde KEINE Produkte die nicht vorkommen.
 
-function buildUserPrompt(lines: string[], priceList: number[]): string {
+Antwort: NUR ein JSON-Array, keine Erklärungen, kein Markdown.`;
+
+const LLM_REQUEST_TIMEOUT_MS = 60_000;
+
+async function fetchWithTimeout(url: string, init: RequestInit, timeoutMs = LLM_REQUEST_TIMEOUT_MS): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function buildUserPrompt(lines: string[], priceList: number[], totalList: number[]): string {
   const numbered = lines.map((l, i) => `Zeile ${i + 1}: "${l}"`).join("\n");
 
   const estimatedCount = estimateProductCount(lines);
-  const priceContext = priceList.length > 0
-    ? `\nAus der Preis-Spalte wurden ${priceList.length} Preise extrahiert (gleiche Reihenfolge wie Produkte):
-${priceList.map((p, i) => `  ${i + 1}. ${p.toFixed(2)} CHF`).join("\n")}
+
+  let priceContext = "";
+  if (priceList.length > 0) {
+    const priceRows = priceList.map((p, i) => {
+      const total = totalList[i] ?? 0;
+      let hint = "";
+      if (total > p + 0.09 && p > 0) {
+        const ratio = total / p;
+        const rounded = Math.round(ratio);
+        if (Math.abs(ratio - rounded) < 0.05 && rounded >= 2 && rounded <= 20) {
+          hint = ` → Total: ${total.toFixed(2)} CHF, MENGE: ${rounded}! (${p.toFixed(2)} × ${rounded} = ${total.toFixed(2)})`;
+        } else {
+          // Total doesn't match a clean multiple — OCR likely dropped a digit from unit price
+          hint = ` → Total: ${total.toFixed(2)} CHF ⚠ (Preis evtl. falsch erkannt, richtiger Preis = Total ÷ Menge)`;
+        }
+      }
+      return `  ${i + 1}. ${p.toFixed(2)} CHF${hint}`;
+    });
+    priceContext = `\nAus der Preis-Spalte wurden ${priceList.length} Einheitspreise extrahiert (gleiche Reihenfolge wie Produkte):
+${priceRows.join("\n")}
+Wenn "MENGE: N" steht, hat der Kunde N Stück dieses Produkts gekauft → setze quantity: N.
 Die OCR kann Preise falsch lesen. Ordne die Preise den Produkten in der gleichen Reihenfolge zu.
-Falls es MEHR Produkte als Preise gibt: schätze fehlende Preise basierend auf typischen Schweizer Supermarkt-Preisen.\n`
-    : "";
+Falls es MEHR Produkte als Preise gibt: schätze fehlende Preise basierend auf typischen Schweizer Supermarkt-Preisen.\n`;
+  }
   const countHint = estimatedCount > 5
     ? `Dieser Kassenzettel hat ungefähr ${estimatedCount} Produkte.`
     : "";
@@ -71,8 +105,8 @@ AUFGABE:
 - JEDES Produkt MUSS einen unitPrice > 0 haben! Nutze die Preis-Spalte in derselben Reihenfolge.
 - Falls Preise fehlen (OCR-Fehler): schätze den Preis realistisch für ein Schweizer Supermarkt-Produkt (z.B. Erdbeeren ~4.90, Schmelzkäse ~2.50).
 
-Gib ein JSON-Array zurück:
-[{"rawText":"OCR-Kürzel","productName":"Voller Name","brand":"Marke oder null","quantity":1,"unit":"Stk","unitPrice":3.50,"category":"Kategorie","confidence":"high|medium|low"}]`;
+Gib ein JSON-Array zurück (Produkte in Kassenzettel-Reihenfolge, position beginnt bei 1):
+[{"position":1,"rawText":"OCR-Kürzel","productName":"Voller Name","brand":"Marke oder null","quantity":1,"unit":"Stk","unitPrice":3.50,"category":"Kategorie","confidence":"high|medium|low"}]`;
 }
 
 function estimateProductCount(lines: string[]): number {
@@ -98,7 +132,7 @@ async function callOpenAI(
   model: string,
   apiKey: string
 ): Promise<string> {
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+  const res = await fetchWithTimeout("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -111,8 +145,7 @@ async function callOpenAI(
         { role: "user", content: userPrompt },
       ],
       temperature: 0.1,
-      max_tokens: 8192,
-      response_format: { type: "json_object" },
+      max_tokens: 2048,
     }),
   });
 
@@ -131,7 +164,7 @@ async function callAnthropic(
   model: string,
   apiKey: string
 ): Promise<string> {
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const res = await fetchWithTimeout("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -140,7 +173,7 @@ async function callAnthropic(
     },
     body: JSON.stringify({
       model,
-      max_tokens: 8192,
+      max_tokens: 2048,
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
       temperature: 0.1,
@@ -188,7 +221,7 @@ async function callPerplexity(
   model: string,
   apiKey: string
 ): Promise<string> {
-  const res = await fetch("https://api.perplexity.ai/chat/completions", {
+  const res = await fetchWithTimeout("https://api.perplexity.ai/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -221,7 +254,7 @@ async function callGemini(
 ): Promise<string> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
-  const res = await fetch(url, {
+  const res = await fetchWithTimeout(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -274,7 +307,7 @@ export async function parseReceiptLines(
     "Parsed OCR price columns"
   );
 
-  const userPrompt = buildUserPrompt(rawLines, priceList);
+  const userPrompt = buildUserPrompt(rawLines, priceList, totalList);
   let response: string;
 
   if (env.LLM_PROVIDER === "openai" && env.OPENAI_API_KEY) {
@@ -335,7 +368,62 @@ export async function parseReceiptLines(
   const final = deduped;
 
   if (priceList.length > 0) {
-    assignPrices(final, priceList, totalList, logger);
+    assignPrices(final, priceList, logger);
+  }
+
+  // Correct quantities and prices from price/total ratio
+  if (priceList.length === final.length && totalList.length === final.length) {
+    for (let i = 0; i < final.length; i++) {
+      const unitPrice = priceList[i];
+      const total = totalList[i] ?? 0;
+
+      // If total ≈ unit_price: definitively qty=1 regardless of what LLM said
+      if (total > 0 && unitPrice > 0 && Math.abs(total - unitPrice) < 0.05) {
+        if ((final[i].quantity ?? 1) > 1) {
+          logger?.debug(
+            { productName: final[i].productName, oldQty: final[i].quantity },
+            "Quantity forced to 1 (total=unitPrice confirmed single purchase)"
+          );
+          final[i].quantity = 1;
+        }
+        continue;
+      }
+
+      if (total <= unitPrice + 0.09 || unitPrice <= 0) continue;
+
+      const ratio = total / unitPrice;
+      const rounded = Math.round(ratio);
+
+      if (Math.abs(ratio - rounded) < 0.05 && rounded >= 2 && rounded <= 20) {
+        // Clean integer ratio → correct quantity
+        if (final[i].quantity !== rounded) {
+          logger?.debug(
+            { productName: final[i].productName, oldQty: final[i].quantity, newQty: rounded, unitPrice, total },
+            "Quantity corrected from price/total ratio"
+          );
+          final[i].quantity = rounded;
+        }
+      } else {
+        // Ratio is not a clean integer — OCR likely dropped a leading digit from the price.
+        // Try small quantities and see if total / q gives a clean Swiss price (multiple of 0.05).
+        for (let q = 2; q <= 6; q++) {
+          const corrected = total / q;
+          const isClean = Math.abs(Math.round(corrected * 20) - corrected * 20) < 0.01;
+          if (!isClean || corrected < 0.50 || corrected > 99) continue;
+          // OCR price must be significantly lower (< 30% of corrected → leading digit was dropped)
+          if (unitPrice >= corrected * 0.3) continue;
+          // Sanity: difference must be at least 0.80 CHF
+          if (corrected - unitPrice < 0.80) continue;
+          logger?.debug(
+            { productName: final[i].productName, ocrPrice: unitPrice, correctedPrice: corrected, qty: q, total },
+            "Price corrected (OCR dropped leading digit)"
+          );
+          final[i].unitPrice = corrected;
+          final[i].quantity = q;
+          break;
+        }
+      }
+    }
   }
 
   return final;
@@ -344,16 +432,11 @@ export async function parseReceiptLines(
 function assignPrices(
   items: ParsedReceiptLine[],
   priceList: number[],
-  totalList: number[],
   logger?: LoggerLike
 ): void {
   if (items.length === priceList.length) {
     for (let i = 0; i < items.length; i++) {
       items[i].unitPrice = priceList[i];
-      const total = totalList[i];
-      if (total > 0 && Math.abs(total - priceList[i]) > 0.05 && priceList[i] > 0) {
-        items[i].quantity = Math.round(total / priceList[i]);
-      }
     }
     logger?.debug(
       { mode: "exact", items: items.map(p => `${p.productName} ${p.unitPrice}`) },
@@ -420,10 +503,6 @@ function assignPrices(
     let pi = 0;
     for (let ii = 0; ii < iLen && pi < pLen; ii++) {
       items[ii].unitPrice = priceList[pi];
-      const total = totalList[pi];
-      if (total > 0 && Math.abs(total - priceList[pi]) > 0.05 && priceList[pi] > 0) {
-        items[ii].quantity = Math.round(total / priceList[pi]);
-      }
       pi++;
     }
     logger?.debug(

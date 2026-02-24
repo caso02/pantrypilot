@@ -60,7 +60,8 @@ final class ScanViewModel {
             let productName = useDBName ? parsed.match!.canonicalName : parsed.llm.productName
             self.canonicalName = productName.isEmpty ? parsed.rawText : productName
 
-            self.quantity = parsed.llm.quantity ?? 1
+            let parsedQuantity = parsed.llm.quantity ?? 1
+            self.quantity = parsedQuantity > 0 ? parsedQuantity : 1
             self.unit = parsed.llm.unit ?? "Stk"
             self.price = parsed.llm.unitPrice
             self.dbScore = parsed.match?.score
@@ -76,7 +77,8 @@ final class ScanViewModel {
             self.rawText = parsed.rawText
             let normalized = normService.normalize(parsed.rawText)
             self.canonicalName = normalized
-            self.quantity = parsed.quantity ?? 1
+            let parsedQuantity = parsed.quantity ?? 1
+            self.quantity = parsedQuantity > 0 ? parsedQuantity : 1
             self.unit = parsed.unit ?? "Stk"
             self.price = parsed.price
             self.confidence = "medium"
@@ -317,7 +319,10 @@ final class ScanViewModel {
                 category: item.category
             )
         }
-        let totalAmount = receiptLineItems.compactMap(\.totalPrice).reduce(0, +)
+        let totalAmount = receiptLineItems.reduce(0.0) { sum, item in
+            guard let price = item.unitPrice else { return sum }
+            return sum + price * item.quantity
+        }
         let receipt = Receipt(
             merchant: parsedMerchant.isEmpty ? "Migros" : parsedMerchant,
             date: .now,

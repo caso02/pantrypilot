@@ -25,9 +25,28 @@ const shoppingItemSchema = z.object({
   isCompleted: z.boolean().default(false),
 });
 
+const receiptLineItemSchema = z.object({
+  clientId: z.string(),
+  name: z.string(),
+  quantity: z.number(),
+  unit: z.string(),
+  unitPrice: z.number().nullable().optional(),
+  category: z.string().nullable().optional(),
+});
+
+const receiptSchema = z.object({
+  clientId: z.string(),
+  merchant: z.string(),
+  date: z.string(),
+  totalAmount: z.number().nullable().optional(),
+  itemCount: z.number().int(),
+  lineItems: z.array(receiptLineItemSchema),
+});
+
 const syncPushSchema = z.object({
   inventory: z.array(inventoryItemSchema),
   shoppingList: z.array(shoppingItemSchema),
+  receipts: z.array(receiptSchema).default([]),
 });
 
 async function extractUserId(authHeader: string | undefined): Promise<string | null> {
@@ -103,21 +122,93 @@ export async function syncRoutes(app: FastifyInstance) {
       });
     }
 
-    const inventoryIds = body.inventory.map(i => i.clientId);
-    if (inventoryIds.length > 0) {
-      await prisma.syncInventoryItem.deleteMany({
-        where: { userId, clientId: { notIn: inventoryIds } },
+    const receiptClientIds: string[] = [];
+    for (const receipt of body.receipts) {
+      const savedReceipt = await prisma.syncReceipt.upsert({
+        where: { userId_clientId: { userId, clientId: receipt.clientId } },
+        create: {
+          userId,
+          clientId: receipt.clientId,
+          merchant: receipt.merchant,
+          date: new Date(receipt.date),
+          totalAmount: receipt.totalAmount,
+          itemCount: receipt.itemCount,
+        },
+        update: {
+          merchant: receipt.merchant,
+          date: new Date(receipt.date),
+          totalAmount: receipt.totalAmount,
+          itemCount: receipt.itemCount,
+        },
       });
+
+      receiptClientIds.push(receipt.clientId);
+
+      const existingLines = await prisma.syncReceiptLineItem.findMany({
+        where: { receiptId: savedReceipt.id },
+        select: { clientId: true },
+      });
+      const incomingLineIds = receipt.lineItems.map((line) => line.clientId);
+
+      for (const line of receipt.lineItems) {
+        await prisma.syncReceiptLineItem.upsert({
+          where: {
+            receiptId_clientId: {
+              receiptId: savedReceipt.id,
+              clientId: line.clientId,
+            },
+          },
+          create: {
+            receiptId: savedReceipt.id,
+            clientId: line.clientId,
+            name: line.name,
+            quantity: line.quantity,
+            unit: line.unit,
+            unitPrice: line.unitPrice,
+            category: line.category,
+          },
+          update: {
+            name: line.name,
+            quantity: line.quantity,
+            unit: line.unit,
+            unitPrice: line.unitPrice,
+            category: line.category,
+          },
+        });
+      }
+
+      const staleLineIds = existingLines
+        .map((line) => line.clientId)
+        .filter((id) => !incomingLineIds.includes(id));
+      if (staleLineIds.length > 0) {
+        await prisma.syncReceiptLineItem.deleteMany({
+          where: { receiptId: savedReceipt.id, clientId: { in: staleLineIds } },
+        });
+      }
     }
+
+    const inventoryIds = body.inventory.map(i => i.clientId);
+    await prisma.syncInventoryItem.deleteMany({
+      where: { userId, clientId: { notIn: inventoryIds } },
+    });
 
     const shoppingIds = body.shoppingList.map(i => i.clientId);
-    if (shoppingIds.length > 0) {
-      await prisma.syncShoppingItem.deleteMany({
-        where: { userId, clientId: { notIn: shoppingIds } },
-      });
-    }
+    await prisma.syncShoppingItem.deleteMany({
+      where: { userId, clientId: { notIn: shoppingIds } },
+    });
 
-    return reply.send({ ok: true, synced: { inventory: body.inventory.length, shoppingList: body.shoppingList.length } });
+    await prisma.syncReceipt.deleteMany({
+      where: { userId, clientId: { notIn: receiptClientIds } },
+    });
+
+    return reply.send({
+      ok: true,
+      synced: {
+        inventory: body.inventory.length,
+        shoppingList: body.shoppingList.length,
+        receipts: body.receipts.length,
+      },
+    });
   });
 
   app.get("/v1/sync/pull", async (request, reply) => {
@@ -128,6 +219,10 @@ export async function syncRoutes(app: FastifyInstance) {
 
     const inventory = await prisma.syncInventoryItem.findMany({ where: { userId } });
     const shoppingList = await prisma.syncShoppingItem.findMany({ where: { userId } });
+    const receipts = await prisma.syncReceipt.findMany({
+      where: { userId },
+      include: { lineItems: true },
+    });
 
     return reply.send({
       inventory: inventory.map(i => ({
@@ -149,6 +244,21 @@ export async function syncRoutes(app: FastifyInstance) {
         unit: s.unit,
         addedAt: s.addedAt.toISOString(),
         isCompleted: s.isCompleted,
+      })),
+      receipts: receipts.map((r) => ({
+        clientId: r.clientId,
+        merchant: r.merchant,
+        date: r.date.toISOString(),
+        totalAmount: r.totalAmount,
+        itemCount: r.itemCount,
+        lineItems: r.lineItems.map((line) => ({
+          clientId: line.clientId,
+          name: line.name,
+          quantity: line.quantity,
+          unit: line.unit,
+          unitPrice: line.unitPrice,
+          category: line.category,
+        })),
       })),
     });
   });

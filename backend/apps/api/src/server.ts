@@ -10,11 +10,15 @@ async function main() {
   const app = buildApp();
 
   // Start background workers
-  try {
-    startSyncWorker();
-    await scheduleNightlyRefresh();
-  } catch (err) {
-    app.log.warn({ err }, "Could not start background jobs (Redis may be unavailable)");
+  if (env.ENABLE_BACKGROUND_JOBS) {
+    try {
+      startSyncWorker();
+      await scheduleNightlyRefresh();
+    } catch (err) {
+      app.log.warn({ err }, "Could not start background jobs (Redis may be unavailable)");
+    }
+  } else {
+    app.log.info("Background jobs disabled (set ENABLE_BACKGROUND_JOBS=1 to enable)");
   }
 
   // Graceful shutdown

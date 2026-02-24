@@ -21,6 +21,10 @@ final class ReceiptOCRService: Sendable {
             throw OCRError.invalidImage
         }
 
+        // Preserve UIImage orientation so Vision reads the image upright.
+        // cgImage strips orientation metadata, so we pass it explicitly.
+        let cgOrientation = CGImagePropertyOrientation(image.imageOrientation)
+
         return try await withCheckedThrowingContinuation { continuation in
             let request = VNRecognizeTextRequest { request, error in
                 if let error {
@@ -45,7 +49,20 @@ final class ReceiptOCRService: Sendable {
                     ))
                 }
 
+#if DEBUG
+                AppLogger.ocr.debug("OCR raw observations (\(blocks.count)):")
+                for (i, b) in blocks.sorted(by: { $0.midY > $1.midY }).enumerated() {
+                    AppLogger.ocr.debug("  [\(i)] y=\(String(format: "%.3f", b.midY)) x=\(String(format: "%.3f", b.minX)): \"\(b.text)\"")
+                }
+#endif
+
                 let rows = Self.groupIntoRows(blocks)
+#if DEBUG
+                AppLogger.ocr.debug("OCR grouped rows (\(rows.count)):")
+                for (i, row) in rows.enumerated() {
+                    AppLogger.ocr.debug("  Row \(i + 1): \"\(row)\"")
+                }
+#endif
                 let fullText = rows.joined(separator: "\n")
                 continuation.resume(returning: OCRResult(lines: rows, fullText: fullText))
             }
@@ -54,7 +71,7 @@ final class ReceiptOCRService: Sendable {
             request.recognitionLanguages = ["de-DE", "de-CH", "en-US"]
             request.usesLanguageCorrection = false
 
-            let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
+            let handler = VNImageRequestHandler(cgImage: cgImage, orientation: cgOrientation, options: [:])
             do {
                 try handler.perform([request])
             } catch {
@@ -164,6 +181,22 @@ final class ReceiptOCRService: Sendable {
         }
 
         return result
+    }
+}
+
+private extension CGImagePropertyOrientation {
+    init(_ uiOrientation: UIImage.Orientation) {
+        switch uiOrientation {
+        case .up:            self = .up
+        case .down:          self = .down
+        case .left:          self = .left
+        case .right:         self = .right
+        case .upMirrored:    self = .upMirrored
+        case .downMirrored:  self = .downMirrored
+        case .leftMirrored:  self = .leftMirrored
+        case .rightMirrored: self = .rightMirrored
+        @unknown default:    self = .up
+        }
     }
 }
 

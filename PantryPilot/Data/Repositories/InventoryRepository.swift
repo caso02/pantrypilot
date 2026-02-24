@@ -56,6 +56,30 @@ final class InventoryRepository: InventoryRepositoryProtocol {
         try context.save()
     }
 
+    func replaceAll(with items: [InventoryItem]) async throws {
+        let context = persistence.container.mainContext
+        let existing = try context.fetch(FetchDescriptor<PersistedInventoryItem>())
+        for item in existing {
+            context.delete(item)
+        }
+        for item in items {
+            let persisted = PersistedInventoryItem(
+                itemId: item.id,
+                canonicalName: item.canonicalName,
+                quantity: item.quantity,
+                unit: item.unit,
+                location: item.location,
+                purchaseDate: item.purchaseDate,
+                estimatedExpiryDate: item.estimatedExpiryDate,
+                opened: item.opened,
+                notes: item.notes,
+                category: item.category
+            )
+            context.insert(persisted)
+        }
+        try context.save()
+    }
+
     func delete(_ item: InventoryItem) async throws {
         let context = persistence.container.mainContext
         let id = item.id

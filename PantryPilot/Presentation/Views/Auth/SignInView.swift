@@ -170,12 +170,18 @@ struct SignInView: View {
                 return
             }
 
-            sessionStore.signInWithApple(
-                userID: credential.user,
-                identityToken: credential.identityToken,
-                fullName: credential.fullName,
-                email: credential.email
-            )
+            Task {
+                do {
+                    try await sessionStore.signInWithApple(
+                        userID: credential.user,
+                        identityToken: credential.identityToken,
+                        fullName: credential.fullName,
+                        email: credential.email
+                    )
+                } catch {
+                    errorMessage = "Apple Anmeldung fehlgeschlagen: \(error.localizedDescription)"
+                }
+            }
 
         case .failure(let error):
             if (error as NSError).code == ASAuthorizationError.canceled.rawValue {
@@ -203,7 +209,13 @@ struct SignInView: View {
             }
             let email = result.user.profile?.email
             let displayName = result.user.profile?.name
-            try await sessionStore.signInWithGoogle(idToken: idToken, email: email, displayName: displayName)
+            let avatarURL = result.user.profile?.imageURL(withDimension: 96)?.absoluteString
+            try await sessionStore.signInWithGoogle(
+                idToken: idToken,
+                email: email,
+                displayName: displayName,
+                avatarURL: avatarURL
+            )
         } catch {
             if (error as NSError).code == GIDSignInError.canceled.rawValue {
                 return
