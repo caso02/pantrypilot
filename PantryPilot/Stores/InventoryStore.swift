@@ -301,8 +301,19 @@ final class InventoryStore {
 
     func applyCloudSnapshot(_ response: SyncPullResponse) async {
         let formatter = ISO8601DateFormatter()
+        let localByClientId = Dictionary(uniqueKeysWithValues: items.map { ($0.id.uuidString, $0) })
 
         let restoredInventory = response.inventory.map { remote in
+            let localFallback = localByClientId[remote.clientId]
+            let resolvedEstimatedExpiryDate = remote.estimatedExpiryDate.flatMap { formatter.date(from: $0) }
+                ?? localFallback?.estimatedExpiryDate
+            let resolvedImageUrl: String? = {
+                if let remoteImageUrl = remote.imageUrl, !remoteImageUrl.isEmpty {
+                    return remoteImageUrl
+                }
+                return localFallback?.imageUrl
+            }()
+
             InventoryItem(
                 id: UUID(uuidString: remote.clientId) ?? UUID(),
                 canonicalName: remote.canonicalName,
@@ -310,11 +321,11 @@ final class InventoryStore {
                 unit: remote.unit,
                 location: StorageLocation(rawValue: remote.location) ?? .pantry,
                 purchaseDate: formatter.date(from: remote.purchaseDate) ?? .now,
-                estimatedExpiryDate: remote.estimatedExpiryDate.flatMap { formatter.date(from: $0) },
+                estimatedExpiryDate: resolvedEstimatedExpiryDate,
                 opened: remote.opened,
                 notes: remote.notes,
                 category: remote.category.flatMap(FoodCategory.init(rawValue:)),
-                imageUrl: remote.imageUrl
+                imageUrl: resolvedImageUrl
             )
         }
 

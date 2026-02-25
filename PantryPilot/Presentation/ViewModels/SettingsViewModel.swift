@@ -4,6 +4,25 @@ import SwiftUI
 @Observable
 @MainActor
 final class SettingsViewModel {
+    enum BackendPreset: String, CaseIterable, Identifiable {
+        case local
+        case render
+        case custom
+
+        var id: String { rawValue }
+
+        var title: String {
+            switch self {
+            case .local: return "Lokal (192.168.1.61)"
+            case .render: return "Cloud (Render)"
+            case .custom: return "Eigene URL"
+            }
+        }
+    }
+
+    static let localBackendURL = "http://192.168.1.61:3000"
+    static let renderBackendURL = "https://pantrypilot-xltu.onrender.com"
+
     var notificationsEnabled: Bool {
         didSet { UserDefaults.standard.set(notificationsEnabled, forKey: "notificationsEnabled") }
     }
@@ -49,5 +68,27 @@ final class SettingsViewModel {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
         return "\(version) (\(build))"
+    }
+
+    var selectedBackendPreset: BackendPreset {
+        let normalized = backendURL.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if normalized == Self.localBackendURL.lowercased() {
+            return .local
+        }
+        if normalized == Self.renderBackendURL.lowercased() {
+            return .render
+        }
+        return .custom
+    }
+
+    func setBackendPreset(_ preset: BackendPreset) {
+        switch preset {
+        case .local:
+            backendURL = Self.localBackendURL
+        case .render:
+            backendURL = Self.renderBackendURL
+        case .custom:
+            break
+        }
     }
 }

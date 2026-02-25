@@ -122,12 +122,41 @@ struct SettingsView: View {
                 settingsRowLabel(icon: "link", label: "Backend URL", subtitle: nil)
                     .padding(.horizontal, 16)
                     .padding(.top, 4)
-                TextField("http://192.168.1.61:3000", text: $viewModel.backendURL)
-                    .font(.system(size: 13))
-                    .textFieldStyle(.roundedBorder)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-                    .keyboardType(.URL)
+
+                Picker(
+                    "Backend auswählen",
+                    selection: Binding(
+                        get: { viewModel.selectedBackendPreset },
+                        set: { viewModel.setBackendPreset($0) }
+                    )
+                ) {
+                    ForEach(SettingsViewModel.BackendPreset.allCases) { preset in
+                        Text(preset.title).tag(preset)
+                    }
+                }
+                .pickerStyle(.menu)
+                .padding(.horizontal, 16)
+
+                if viewModel.selectedBackendPreset == .custom {
+                    TextField("https://example.com", text: $viewModel.backendURL)
+                        .font(.system(size: 13))
+                        .textFieldStyle(.roundedBorder)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                        .keyboardType(.URL)
+                        .padding(.horizontal, 16)
+                } else {
+                    Text(viewModel.backendURL)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .padding(.horizontal, 16)
+                }
+
+                Text("Änderung gilt für neue Requests; ggf. App kurz neu starten.")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
                     .padding(.horizontal, 16)
                     .padding(.bottom, 12)
             }
