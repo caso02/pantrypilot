@@ -117,6 +117,15 @@ export async function receiptRoutes(app: FastifyInstance): Promise<void> {
       }
     }
 
+    request.log.debug({
+      matchSummary: output.map((o) => ({
+        name: o.llm.productName,
+        score: o.match?.score ?? null,
+        hasImage: o.match?.imageUrl != null,
+        imageUrl: o.match?.imageUrl ?? null,
+      })),
+    }, "Match results with imageUrl");
+
     return {
       parsed: output,
       stats: {
