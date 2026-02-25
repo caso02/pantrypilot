@@ -11,6 +11,7 @@ struct InventoryItem: Identifiable, Codable, Hashable {
     var opened: Bool
     var notes: String?
     var category: FoodCategory?
+    var imageUrl: String?
 
     init(
         id: UUID = UUID(),
@@ -22,7 +23,8 @@ struct InventoryItem: Identifiable, Codable, Hashable {
         estimatedExpiryDate: Date? = nil,
         opened: Bool = false,
         notes: String? = nil,
-        category: FoodCategory? = nil
+        category: FoodCategory? = nil,
+        imageUrl: String? = nil
     ) {
         self.id = id
         self.canonicalName = canonicalName
@@ -34,6 +36,7 @@ struct InventoryItem: Identifiable, Codable, Hashable {
         self.opened = opened
         self.notes = notes
         self.category = category
+        self.imageUrl = imageUrl
     }
 
     var expiryStatus: ExpiryStatus {

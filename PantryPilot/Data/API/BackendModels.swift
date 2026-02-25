@@ -43,6 +43,7 @@ struct ProductMatch: Codable {
     let canonicalName: String
     let unitText: String?
     let categoryPath: [String]
+    let imageUrl: String?
     let score: Double
 }
 

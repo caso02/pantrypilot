@@ -22,6 +22,7 @@ export interface ParsedAndMatchedLine {
     canonicalName: string;
     unitText: string | null;
     categoryPath: string[];
+    imageUrl: string | null;
     score: number;
   } | null;
 }
@@ -104,6 +105,7 @@ export async function receiptRoutes(app: FastifyInstance): Promise<void> {
                 canonicalName: bestMatch.canonicalName,
                 unitText: bestMatch.unitText,
                 categoryPath: bestMatch.categoryPath,
+                imageUrl: bestMatch.imageUrl,
                 score: bestMatch.score,
               }
             : null,

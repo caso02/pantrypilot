@@ -30,7 +30,8 @@ final class InventoryRepository: InventoryRepositoryProtocol {
             estimatedExpiryDate: item.estimatedExpiryDate,
             opened: item.opened,
             notes: item.notes,
-            category: item.category
+            category: item.category,
+            imageUrl: item.imageUrl
         )
         context.insert(persisted)
         try context.save()
@@ -49,7 +50,8 @@ final class InventoryRepository: InventoryRepositoryProtocol {
                 estimatedExpiryDate: item.estimatedExpiryDate,
                 opened: item.opened,
                 notes: item.notes,
-                category: item.category
+                category: item.category,
+                imageUrl: item.imageUrl
             )
             context.insert(persisted)
         }
@@ -73,7 +75,8 @@ final class InventoryRepository: InventoryRepositoryProtocol {
                 estimatedExpiryDate: item.estimatedExpiryDate,
                 opened: item.opened,
                 notes: item.notes,
-                category: item.category
+                category: item.category,
+                imageUrl: item.imageUrl
             )
             context.insert(persisted)
         }
@@ -108,6 +111,7 @@ final class InventoryRepository: InventoryRepositoryProtocol {
             persisted.opened = item.opened
             persisted.notes = item.notes
             persisted.categoryRaw = item.category?.rawValue
+            persisted.imageUrl = item.imageUrl
             try context.save()
         }
     }

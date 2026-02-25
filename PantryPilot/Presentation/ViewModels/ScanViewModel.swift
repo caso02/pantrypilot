@@ -49,6 +49,7 @@ final class ScanViewModel {
         var isIgnored: Bool
         var confidence: String
         var dbScore: Double?
+        var imageUrl: String?
 
         init(from parsed: ParsedAndMatchedLine, normService: NormalizationService) {
             self.id = UUID()
@@ -65,6 +66,7 @@ final class ScanViewModel {
             self.unit = parsed.llm.unit ?? "Stk"
             self.price = parsed.llm.unitPrice
             self.dbScore = parsed.match?.score
+            self.imageUrl = parsed.match?.imageUrl
 
             let llmCategory = parsed.llm.category
             self.category = Self.mapCategory(llmCategory) ?? normService.guessCategory(for: productName)
@@ -83,6 +85,7 @@ final class ScanViewModel {
             self.price = parsed.price
             self.confidence = "medium"
             self.dbScore = nil
+            self.imageUrl = nil
             let cat = normService.guessCategory(for: normalized)
             self.category = cat
             self.location = NormalizationService.defaultLocationForCategory[cat] ?? .pantry
@@ -294,7 +297,8 @@ final class ScanViewModel {
                 location: item.location,
                 purchaseDate: .now,
                 estimatedExpiryDate: expiry,
-                category: item.category
+                category: item.category,
+                imageUrl: item.imageUrl
             )
         }
 

@@ -19,6 +19,7 @@ export interface MatchSuggestion {
   canonicalName: string;
   unitText: string | null;
   categoryPath: string[];
+  imageUrl: string | null;
   score: number;
 }
 
@@ -55,6 +56,7 @@ export async function matchLines(
           canonicalName: true,
           unitText: true,
           categoryPath: true,
+          imageUrl: true,
         },
       });
 
@@ -66,11 +68,13 @@ export async function matchLines(
           canonicalName: string;
           unitText: string | null;
           categoryPath: string[];
+          imageUrl: string | null;
         }) => ({
           productId: p.id,
           canonicalName: p.canonicalName,
           unitText: p.unitText,
           categoryPath: p.categoryPath,
+          imageUrl: p.imageUrl,
           score: 1.0,
         })),
       });
@@ -92,6 +96,7 @@ export async function matchLines(
             unitText: true,
             categoryPath: true,
             keywords: true,
+            imageUrl: true,
           },
         },
       },
@@ -108,6 +113,7 @@ export async function matchLines(
             unitText: true,
             categoryPath: true,
             keywords: true,
+            imageUrl: true,
           },
         })
       : [];
@@ -121,6 +127,7 @@ export async function matchLines(
         unitText: string | null;
         categoryPath: string[];
         keywords: string[];
+        imageUrl: string | null;
       }
     >();
 
@@ -139,6 +146,7 @@ export async function matchLines(
       canonicalName: string;
       unitText: string | null;
       categoryPath: string[];
+      imageUrl: string | null;
     }>[] = [];
 
     for (const [, candidate] of candidateMap) {
@@ -160,6 +168,7 @@ export async function matchLines(
           canonicalName: candidate.canonicalName,
           unitText: candidate.unitText,
           categoryPath: candidate.categoryPath,
+          imageUrl: candidate.imageUrl,
         },
         score: Math.round(score * 1000) / 1000,
       });
@@ -185,6 +194,7 @@ export async function matchLines(
         canonicalName: s.item.canonicalName,
         unitText: s.item.unitText,
         categoryPath: s.item.categoryPath,
+        imageUrl: s.item.imageUrl,
         score: s.score,
       })),
     });

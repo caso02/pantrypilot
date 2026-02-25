@@ -13,6 +13,7 @@ final class PersistedInventoryItem {
     var opened: Bool
     var notes: String?
     var categoryRaw: String?
+    var imageUrl: String?
 
     init(
         itemId: UUID = UUID(),
@@ -24,7 +25,8 @@ final class PersistedInventoryItem {
         estimatedExpiryDate: Date? = nil,
         opened: Bool = false,
         notes: String? = nil,
-        category: FoodCategory? = nil
+        category: FoodCategory? = nil,
+        imageUrl: String? = nil
     ) {
         self.itemId = itemId
         self.canonicalName = canonicalName
@@ -36,6 +38,7 @@ final class PersistedInventoryItem {
         self.opened = opened
         self.notes = notes
         self.categoryRaw = category?.rawValue
+        self.imageUrl = imageUrl
     }
 
     func toDomain() -> InventoryItem {
@@ -49,7 +52,8 @@ final class PersistedInventoryItem {
             estimatedExpiryDate: estimatedExpiryDate,
             opened: opened,
             notes: notes,
-            category: categoryRaw.flatMap { FoodCategory(rawValue: $0) }
+            category: categoryRaw.flatMap { FoodCategory(rawValue: $0) },
+            imageUrl: imageUrl
         )
     }
 

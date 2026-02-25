@@ -1,15 +1,44 @@
 import SwiftUI
 
+struct ProductImageView: View {
+    let imageUrl: String?
+    let category: FoodCategory?
+    let size: CGFloat
+
+    var body: some View {
+        if let urlStr = imageUrl, let url = URL(string: urlStr) {
+            AsyncImage(url: url) { phase in
+                if let image = phase.image {
+                    image
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: size, height: size)
+                        .clipShape(RoundedRectangle(cornerRadius: size * 0.2, style: .continuous))
+                } else {
+                    fallbackBadge
+                }
+            }
+            .frame(width: size, height: size)
+        } else {
+            fallbackBadge
+        }
+    }
+
+    private var fallbackBadge: some View {
+        AppIconBadge(
+            icon: AppColors.categoryIcon(for: category),
+            color: AppColors.categoryColor(for: category),
+            size: size
+        )
+    }
+}
+
 struct InventoryItemRow: View {
     let item: InventoryItem
 
     var body: some View {
         HStack(spacing: AppSpacing.m) {
-            AppIconBadge(
-                icon: AppColors.categoryIcon(for: item.category),
-                color: AppColors.categoryColor(for: item.category),
-                size: 42
-            )
+            ProductImageView(imageUrl: item.imageUrl, category: item.category, size: 42)
 
             VStack(alignment: .leading, spacing: AppSpacing.xs) {
                 Text(DisplayNameFormatter.format(item.canonicalName))

@@ -532,11 +532,7 @@ struct ItemDetailSheet: View {
     private var headerCard: some View {
         AppCard {
             HStack(spacing: AppSpacing.m) {
-                AppIconBadge(
-                    icon: AppColors.categoryIcon(for: item.category),
-                    color: AppColors.categoryColor(for: item.category),
-                    size: 44
-                )
+                ProductImageView(imageUrl: item.imageUrl, category: item.category, size: 44)
                 VStack(alignment: .leading, spacing: AppSpacing.xs) {
                     Text(DisplayNameFormatter.format(item.canonicalName))
                         .font(AppTypography.headline2)
