@@ -9,9 +9,13 @@ struct AppPrimaryButtonStyle: ButtonStyle {
             .padding(.horizontal, AppSpacing.xl)
             .padding(.vertical, AppSpacing.m)
             .frame(maxWidth: fullWidth ? .infinity : nil)
-            .background(AppColors.primary)
-            .foregroundStyle(.white)
+            .background(AppColors.surface)
+            .foregroundStyle(AppColors.textPrimary)
             .clipShape(RoundedRectangle(cornerRadius: AppSpacing.buttonRadius, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: AppSpacing.buttonRadius, style: .continuous)
+                    .strokeBorder(AppColors.primary.opacity(0.45), lineWidth: 1)
+            }
             .scaleEffect(configuration.isPressed ? 0.96 : 1)
             .opacity(configuration.isPressed ? 0.9 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
@@ -24,12 +28,12 @@ struct AppSecondaryButtonStyle: ButtonStyle {
             .font(AppTypography.bodyMedium)
             .padding(.horizontal, AppSpacing.xl)
             .padding(.vertical, AppSpacing.m)
-            .background(.regularMaterial)
+            .background(AppColors.surface)
             .foregroundStyle(AppColors.primary)
             .clipShape(RoundedRectangle(cornerRadius: AppSpacing.buttonRadius, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: AppSpacing.buttonRadius, style: .continuous)
-                    .strokeBorder(AppColors.primary.opacity(0.2), lineWidth: 1)
+                    .strokeBorder(AppColors.primary.opacity(0.45), lineWidth: 1)
             }
             .scaleEffect(configuration.isPressed ? 0.96 : 1)
             .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)

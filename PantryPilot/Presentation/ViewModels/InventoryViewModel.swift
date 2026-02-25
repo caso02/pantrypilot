@@ -51,6 +51,7 @@ final class InventoryViewModel {
     }
 
     var totalCount: Int { filteredItems.count }
+    var hasAnyItems: Bool { !store.items.isEmpty }
 
     struct LocationGroup: Identifiable {
         let location: StorageLocation

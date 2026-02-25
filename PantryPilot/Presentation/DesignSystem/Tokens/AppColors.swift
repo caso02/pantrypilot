@@ -1,13 +1,14 @@
 import SwiftUI
 
 enum AppColors {
-    static let primary = Color.accentColor
-    static let background = Color(.systemGroupedBackground)
-    static let surface = Color(.secondarySystemGroupedBackground)
+    static let primary = Color(red: 19/255, green: 236/255, blue: 19/255)
+    static let primaryForeground = Color.black
+    static let background = Color.white
+    static let surface = Color.white
     static let surfaceElevated = Color(.tertiarySystemGroupedBackground)
-    static let textPrimary = Color(.label)
-    static let textSecondary = Color(.secondaryLabel)
-    static let textTertiary = Color(.tertiaryLabel)
+    static let textPrimary = Color.black
+    static let textSecondary = Color.black.opacity(0.7)
+    static let textTertiary = Color.black.opacity(0.5)
     static let separator = Color(.separator)
 
     static let success = Color.green
@@ -16,7 +17,7 @@ enum AppColors {
     static let info = Color.blue
 
     static let cardShadow = Color.black.opacity(0.06)
-    static let cardStroke = Color(.separator).opacity(0.3)
+    static let cardStroke = Color(red: 19/255, green: 236/255, blue: 19/255).opacity(0.1)
 
     static func categoryColor(for category: FoodCategory?) -> Color {
         switch category {

@@ -5,6 +5,8 @@ struct InsightsView: View {
     @State private var viewModel: InsightsViewModel
     @Query(sort: \PersistedReceipt.date, order: .reverse) private var allReceipts: [PersistedReceipt]
     @State private var showAllReceipts = false
+    @State private var selectedReceipt: Receipt?
+    var selectedTab: Binding<Int>
     let isAuthenticated: Bool
     let isGoogleAccount: Bool
     let profileImageURL: String?
@@ -12,12 +14,14 @@ struct InsightsView: View {
 
     init(
         store: InventoryStore,
+        selectedTab: Binding<Int> = .constant(3),
         isAuthenticated: Bool = false,
         isGoogleAccount: Bool = false,
         profileImageURL: String? = nil,
         onOpenAccount: @escaping () -> Void = {}
     ) {
         _viewModel = State(initialValue: InsightsViewModel(store: store))
+        self.selectedTab = selectedTab
         self.isAuthenticated = isAuthenticated
         self.isGoogleAccount = isGoogleAccount
         self.profileImageURL = profileImageURL
@@ -26,38 +30,36 @@ struct InsightsView: View {
 
     var body: some View {
         NavigationStack {
-            AppBackgroundView {
+            ZStack {
+                AppColors.background.ignoresSafeArea()
+
                 ScrollView {
-                    VStack(spacing: AppSpacing.xl) {
-                        metricCards
-                        statusCard
+                    VStack(spacing: 0) {
+                        dashboardHeader
+                            .padding(.horizontal, 16)
+                            .padding(.top, 8)
+                            .padding(.bottom, 16)
 
-                        if !viewModel.useFirstItems.isEmpty {
-                            useFirstSection
+                        VStack(spacing: 20) {
+                            spendingCard
+                                .padding(.horizontal, 16)
+
+                            expiryAlertsSection
+                                .padding(.top, 4)
+
+                            quickActionsSection
+                                .padding(.horizontal, 16)
+
+                            recentActivitySection
+                                .padding(.horizontal, 16)
+
+                            Spacer(minLength: 20)
                         }
-
-                        spendingSection
-                        recentReceiptsSection
-
-                        locationCard
-                        categoryCard
                     }
-                    .padding(.horizontal, AppSpacing.l)
-                    .padding(.top, AppSpacing.s)
-                    .padding(.bottom, AppSpacing.xxl)
+                    .padding(.bottom, 20)
                 }
             }
-            .navigationTitle("Übersicht")
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    ProfileToolbarButton(
-                        isAuthenticated: isAuthenticated,
-                        isGoogleAccount: isGoogleAccount,
-                        profileImageURL: profileImageURL,
-                        action: onOpenAccount
-                    )
-                }
-            }
+            .navigationBarHidden(true)
             .navigationDestination(isPresented: $showAllReceipts) {
                 ReceiptHistoryView()
             }
@@ -67,253 +69,292 @@ struct InsightsView: View {
         }
     }
 
-    // MARK: - Metrics
+    // MARK: - Header
 
-    private var metricCards: some View {
-        HStack(spacing: AppSpacing.m) {
-            MetricTile(title: "Gesamt", value: "\(viewModel.totalItems)",
-                       icon: "archivebox.fill", color: AppColors.info)
-            MetricTile(title: "Bald fällig", value: "\(viewModel.expiringSoon)",
-                       icon: "exclamationmark.triangle.fill", color: AppColors.warning)
-            MetricTile(title: "Abgelaufen", value: "\(viewModel.expired)",
-                       icon: "xmark.circle.fill", color: AppColors.danger)
-        }
-    }
-
-    // MARK: - Status
-
-    private var statusCard: some View {
-        AppCard {
-            VStack(alignment: .leading, spacing: AppSpacing.m) {
-                HStack(spacing: AppSpacing.m) {
-                    AppIconBadge(
-                        icon: viewModel.expiringSoon > 0 ? "clock.badge.exclamationmark" : "checkmark.seal.fill",
-                        color: viewModel.expiringSoon > 0 ? AppColors.warning : AppColors.success,
-                        size: 36
-                    )
-                    Text(viewModel.expiringSoonLabel)
-                        .font(AppTypography.callout)
-                        .foregroundStyle(AppColors.textPrimary)
-                }
-                Divider()
-                HStack(spacing: AppSpacing.m) {
-                    AppIconBadge(
-                        icon: viewModel.expired > 0 ? "xmark.circle" : "checkmark.circle",
-                        color: viewModel.expired > 0 ? AppColors.danger : AppColors.success,
-                        size: 36
-                    )
-                    Text(viewModel.expiredLabel)
-                        .font(AppTypography.callout)
-                        .foregroundStyle(AppColors.textPrimary)
-                }
-            }
-        }
-    }
-
-    // MARK: - Use First
-
-    private var useFirstSection: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.m) {
-            AppSectionHeader(title: "Zuerst verwenden", icon: "flame.fill", iconColor: AppColors.warning)
-
-            VStack(spacing: AppSpacing.s) {
-                ForEach(viewModel.useFirstItems) { item in
-                    AppCard(padding: AppSpacing.m) {
-                        HStack(spacing: AppSpacing.m) {
-                            AppIconBadge(
-                                icon: AppColors.categoryIcon(for: item.category),
-                                color: AppColors.categoryColor(for: item.category),
-                                size: 36
-                            )
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(DisplayNameFormatter.format(item.canonicalName))
-                                    .font(AppTypography.bodyMedium)
-                                Text(quantityText(for: item))
-                                    .font(AppTypography.caption)
-                                    .foregroundStyle(AppColors.textSecondary)
-                            }
-                            Spacer()
-                            AppPillBadge(text: item.expiryStatus.shortLabel, color: item.expiryStatus.color)
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - Location Breakdown
-
-    private var locationCard: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.m) {
-            AppSectionHeader(title: "Nach Lagerort", icon: "mappin.circle.fill")
-
-            AppCard {
-                VStack(spacing: 0) {
-                    ForEach(Array(viewModel.itemsByLocation.enumerated()), id: \.element.0) { index, entry in
-                        HStack {
-                            Label(entry.0.displayName, systemImage: entry.0.icon)
-                                .font(AppTypography.callout)
-                            Spacer()
-                            Text("\(entry.1)")
-                                .font(AppTypography.bodyMedium)
-                                .foregroundStyle(AppColors.textSecondary)
-                        }
-                        .padding(.vertical, AppSpacing.s)
-                        if index < viewModel.itemsByLocation.count - 1 {
-                            Divider()
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - Category Breakdown
-
-    private var categoryCard: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.m) {
-            AppSectionHeader(title: "Nach Kategorie", icon: "tag.fill")
-
-            if viewModel.itemsByCategory.isEmpty {
-                AppCard {
-                    Text("Keine Daten")
-                        .font(AppTypography.callout)
-                        .foregroundStyle(AppColors.textSecondary)
-                        .frame(maxWidth: .infinity)
-                }
-            } else {
-                AppCard {
-                    VStack(spacing: 0) {
-                        ForEach(Array(viewModel.itemsByCategory.enumerated()), id: \.element.0) { index, entry in
-                            HStack(spacing: AppSpacing.m) {
-                                AppIconBadge(
-                                    icon: AppColors.categoryIcon(for: entry.0),
-                                    color: AppColors.categoryColor(for: entry.0),
-                                    size: 32
-                                )
-                                Text(entry.0.displayName)
-                                    .font(AppTypography.callout)
-                                Spacer()
-                                Text("\(entry.1)")
-                                    .font(AppTypography.bodyMedium)
-                                    .foregroundStyle(AppColors.textSecondary)
-                            }
-                            .padding(.vertical, AppSpacing.xs)
-                            if index < viewModel.itemsByCategory.count - 1 {
-                                Divider()
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // MARK: - Spending
-
-    private var spendingSection: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.m) {
-            AppSectionHeader(title: "Ausgaben", icon: "chart.line.uptrend.xyaxis", iconColor: AppColors.primary)
-
-            HStack(alignment: .top, spacing: AppSpacing.m) {
-                MetricTile(
-                    title: "Diesen Monat",
-                    value: formattedCHF(currentMonthSpending),
-                    icon: "calendar",
-                    color: AppColors.primary
-                )
-                MetricTile(
-                    title: "Einkäufe",
-                    value: "\(currentMonthReceiptCount)",
-                    icon: "bag.fill",
-                    color: AppColors.info
-                )
-                MetricTile(
-                    title: "Ø pro Einkauf",
-                    value: currentMonthReceiptCount > 0
-                        ? formattedCHF(currentMonthSpending / Double(currentMonthReceiptCount))
-                        : "–",
-                    icon: "equal.circle.fill",
-                    color: AppColors.success
-                )
-            }
-            .fixedSize(horizontal: false, vertical: true)
-        }
-    }
-
-    // MARK: - Recent Receipts
-
-    private var recentReceiptsSection: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.m) {
-            AppSectionHeader(
-                title: "Letzte Kassenzettel",
-                icon: "doc.text.fill",
-                trailing: allReceipts.count > 3 ? "Alle anzeigen" : nil,
-                trailingAction: { showAllReceipts = true }
+    private var dashboardHeader: some View {
+        HStack(spacing: 12) {
+            ProfileToolbarButton(
+                isAuthenticated: isAuthenticated,
+                isGoogleAccount: isGoogleAccount,
+                profileImageURL: profileImageURL,
+                action: onOpenAccount
             )
+            .frame(width: 36, height: 36)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Übersicht")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Text("Dashboard")
+                    .font(.title3.bold())
+            }
+
+            Spacer()
+
+            Button {
+                // Notifications placeholder
+            } label: {
+                Image(systemName: "bell")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(AppColors.textPrimary)
+                    .frame(width: 38, height: 38)
+                    .background(Color(.secondarySystemBackground))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    // MARK: - Spending Card
+
+    private var spendingCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Monatliche Ausgaben")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Text(formattedCHF(currentMonthSpending))
+                        .font(.system(size: 32, weight: .heavy, design: .rounded))
+                        .foregroundStyle(AppColors.textPrimary)
+                }
+                Spacer()
+                if currentMonthReceiptCount > 0 {
+                    Text("\(currentMonthReceiptCount) Einkäufe")
+                        .font(.caption2.weight(.bold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(AppColors.primary.opacity(0.12))
+                        .foregroundStyle(AppColors.primary)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                }
+            }
+
+            miniBarChart
+
+            Divider()
+                .overlay(AppColors.primary.opacity(0.1))
+
+            HStack {
+                Text("Basierend auf \(currentMonthReceiptCount) Einkäufen")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Spacer()
+                if allReceipts.count > 3 {
+                    Button {
+                        showAllReceipts = true
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text("Analytik")
+                            Image(systemName: "chart.line.uptrend.xyaxis")
+                        }
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(AppColors.primary)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(16)
+        .background(AppColors.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay {
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(AppColors.cardStroke, lineWidth: 1)
+        }
+        .shadow(color: .black.opacity(0.04), radius: 6, y: 2)
+    }
+
+    private var miniBarChart: some View {
+        HStack(alignment: .bottom, spacing: 4) {
+            let heights: [CGFloat] = monthlyBarHeights
+            ForEach(0..<heights.count, id: \.self) { i in
+                let isLast = i == heights.count - 1
+                RoundedRectangle(cornerRadius: 3, style: .continuous)
+                    .fill(isLast ? AppColors.primary : AppColors.primary.opacity(0.25 + CGFloat(i) * 0.1))
+                    .frame(maxWidth: .infinity)
+                    .frame(height: max(6, heights[i] * 56))
+            }
+        }
+        .frame(height: 56)
+        .padding(.vertical, 4)
+    }
+
+    private var monthlyBarHeights: [CGFloat] {
+        guard !allReceipts.isEmpty else {
+            return Array(repeating: 0.3, count: 7)
+        }
+        let cal = Calendar.current
+        var monthlySums: [CGFloat] = []
+        for offset in (-6...0) {
+            let date = cal.date(byAdding: .month, value: offset, to: Date()) ?? Date()
+            let sum = allReceipts
+                .filter { cal.isDate($0.date, equalTo: date, toGranularity: .month) }
+                .compactMap(\.totalAmount)
+                .reduce(0, +)
+            monthlySums.append(CGFloat(sum))
+        }
+        let maxVal = monthlySums.max() ?? 1
+        return maxVal > 0 ? monthlySums.map { $0 / maxVal } : monthlySums.map { _ in 0.2 }
+    }
+
+    // MARK: - Expiry Alerts
+
+    private var expiryAlertsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Ablauf-Warnungen")
+                    .font(.title3.bold())
+                Spacer()
+                if viewModel.expiringSoon > 0 {
+                    Text("\(viewModel.expiringSoon) kritisch")
+                        .font(.caption2.weight(.bold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.red.opacity(0.1))
+                        .foregroundStyle(Color.red)
+                        .clipShape(Capsule())
+                }
+            }
+            .padding(.horizontal, 16)
+
+            if viewModel.useFirstItems.isEmpty {
+                HStack(spacing: 12) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(AppColors.primary)
+                    Text("Kein Artikel läuft bald ab")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .padding(16)
+                .background(AppColors.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .overlay { RoundedRectangle(cornerRadius: 16).stroke(AppColors.cardStroke) }
+                .padding(.horizontal, 16)
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(viewModel.useFirstItems.prefix(5)) { item in
+                            ExpiryAlertCard(item: item)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 4)
+                }
+            }
+        }
+    }
+
+    // MARK: - Quick Actions
+
+    private var quickActionsSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Schnellaktionen")
+                .font(.title3.bold())
+
+            HStack(spacing: 12) {
+                QuickActionButton(icon: "doc.text.viewfinder", label: "Scannen") {
+                    selectedTab.wrappedValue = 1
+                }
+                QuickActionButton(icon: "cart.fill", label: "Einkaufsliste") {
+                    selectedTab.wrappedValue = 2
+                }
+                QuickActionButton(icon: "refrigerator.fill", label: "Inventar") {
+                    selectedTab.wrappedValue = 0
+                }
+            }
+        }
+    }
+
+    // MARK: - Recent Activity
+
+    private var recentActivitySection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("Letzte Kassenzettel")
+                    .font(.title3.bold())
+                Spacer()
+                if allReceipts.count > 3 {
+                    Button("Alle anzeigen") { showAllReceipts = true }
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(AppColors.primary)
+                        .buttonStyle(.plain)
+                }
+            }
 
             if allReceipts.isEmpty {
-                AppCard {
-                    HStack(spacing: AppSpacing.m) {
-                        Image(systemName: "doc.text")
-                            .font(.title3)
-                            .foregroundStyle(AppColors.textTertiary)
-                        Text("Noch keine Kassenzettel gescannt")
-                            .font(AppTypography.callout)
-                            .foregroundStyle(AppColors.textSecondary)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                HStack(spacing: 12) {
+                    Image(systemName: "doc.text")
+                        .foregroundStyle(.tertiary)
+                    Text("Noch keine Kassenzettel gescannt")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Spacer()
                 }
+                .padding(16)
+                .background(AppColors.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .overlay { RoundedRectangle(cornerRadius: 16).stroke(AppColors.cardStroke) }
             } else {
-                AppCard {
-                    VStack(spacing: 0) {
-                        ForEach(Array(recentReceipts.enumerated()), id: \.element.receiptId) { index, receipt in
-                            receiptRow(receipt)
-
-                            if index < recentReceipts.count - 1 {
-                                Divider().padding(.leading, 52)
-                            }
+                VStack(spacing: 0) {
+                    ForEach(Array(recentReceipts.enumerated()), id: \.element.receiptId) { index, receipt in
+                        receiptRow(receipt)
+                        if index < recentReceipts.count - 1 {
+                            Divider().padding(.leading, 52)
                         }
                     }
                 }
+                .background(AppColors.surface)
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .overlay { RoundedRectangle(cornerRadius: 16).stroke(AppColors.cardStroke) }
+                .shadow(color: .black.opacity(0.04), radius: 4, y: 2)
             }
         }
     }
-
-    @State private var selectedReceipt: Receipt?
 
     private func receiptRow(_ receipt: PersistedReceipt) -> some View {
         Button {
             selectedReceipt = receipt.toDomain()
         } label: {
-            HStack(spacing: AppSpacing.m) {
-                AppIconBadge(icon: "bag.fill", color: AppColors.primary, size: 36)
+            HStack(spacing: 12) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(AppColors.primary.opacity(0.1))
+                        .frame(width: 40, height: 40)
+                    Image(systemName: "bag.fill")
+                        .font(.system(size: 16))
+                        .foregroundStyle(AppColors.primary)
+                }
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(receipt.merchant)
-                        .font(AppTypography.bodyMedium)
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(AppColors.textPrimary)
                     Text("\(receipt.itemCount) Artikel · \(formattedDate(receipt.date))")
-                        .font(AppTypography.caption)
-                        .foregroundStyle(AppColors.textSecondary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
 
                 Spacer()
 
                 if let total = receipt.totalAmount, total > 0 {
                     Text(String(format: "CHF %.2f", total))
-                        .font(AppTypography.bodyMedium)
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(AppColors.textPrimary)
                 }
 
                 Image(systemName: "chevron.right")
-                    .font(.caption)
-                    .foregroundStyle(AppColors.textTertiary)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.tertiary)
             }
-            .padding(.vertical, AppSpacing.s)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
         }
         .buttonStyle(.plain)
     }
+
+    // MARK: - Helpers
 
     private var recentReceipts: [PersistedReceipt] {
         Array(allReceipts.prefix(3))
@@ -341,51 +382,85 @@ struct InsightsView: View {
         return formatter.string(from: date)
     }
 
-    // MARK: - Helpers
-
     private func formattedCHF(_ amount: Double) -> String {
         if amount >= 100 {
             return String(format: "%.0f CHF", amount)
         }
         return String(format: "%.2f CHF", amount)
     }
+}
 
-    private func quantityText(for item: InventoryItem) -> String {
-        let qty = item.quantity.truncatingRemainder(dividingBy: 1) == 0
-            ? String(format: "%.0f", item.quantity)
-            : String(format: "%.1f", item.quantity)
-        return "\(qty) \(item.unit)"
+// MARK: - Expiry Alert Card
+
+private struct ExpiryAlertCard: View {
+    let item: InventoryItem
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            ZStack(alignment: .topTrailing) {
+                ProductImageView(imageUrl: item.imageUrl, category: item.category, size: 100)
+                    .frame(width: 116, height: 100, alignment: .center)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+                ZStack {
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(.white.opacity(0.92))
+                        .frame(width: 26, height: 26)
+                    Image(systemName: item.expiryStatus.isExpired ? "xmark.circle.fill" : "exclamationmark.triangle.fill")
+                        .font(.system(size: 13))
+                        .foregroundStyle(item.expiryStatus.color)
+                }
+                .padding(6)
+            }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(DisplayNameFormatter.format(item.canonicalName))
+                    .font(.system(size: 13, weight: .bold))
+                    .lineLimit(1)
+                Text(item.expiryStatus.label)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(item.expiryStatus.color)
+            }
+        }
+        .padding(10)
+        .frame(width: 140)
+        .background(AppColors.surface)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay { RoundedRectangle(cornerRadius: 14).stroke(AppColors.cardStroke) }
+        .shadow(color: .black.opacity(0.05), radius: 4, y: 2)
     }
 }
 
-// MARK: - Metric Tile
+// MARK: - Quick Action Button
 
-private struct MetricTile: View {
-    let title: String
-    let value: String
+private struct QuickActionButton: View {
     let icon: String
-    let color: Color
+    let label: String
+    let action: () -> Void
 
     var body: some View {
-        AppCard(padding: AppSpacing.m) {
-            VStack(spacing: AppSpacing.s) {
-                Image(systemName: icon)
-                    .font(.title3)
-                    .foregroundStyle(color)
-                Text(value)
-                    .font(AppTypography.metric)
+        Button(action: action) {
+            VStack(spacing: 10) {
+                Circle()
+                    .fill(AppColors.primary)
+                    .frame(width: 44, height: 44)
+                    .overlay {
+                        Image(systemName: icon)
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundStyle(.black)
+                    }
+                Text(label)
+                    .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(AppColors.textPrimary)
-                    .minimumScaleFactor(0.6)
-                    .lineLimit(1)
-                Text(title)
-                    .font(AppTypography.caption2)
-                    .foregroundStyle(AppColors.textSecondary)
                     .multilineTextAlignment(.center)
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 14)
+            .background(AppColors.primary.opacity(0.08))
+            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .overlay { RoundedRectangle(cornerRadius: 14).stroke(AppColors.primary.opacity(0.2)) }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .buttonStyle(.plain)
     }
 }

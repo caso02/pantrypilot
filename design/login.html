@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PantryPilot - Login</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec13",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102210",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="relative flex h-auto min-h-screen w-full flex-col items-center justify-center p-4">
+<!-- Main Container -->
+<div class="w-full max-w-md bg-white dark:bg-slate-900/50 rounded-xl shadow-xl overflow-hidden border border-slate-200 dark:border-slate-800">
+<!-- Top App Bar Style Branding -->
+<div class="flex items-center justify-between p-4 pb-2 border-b border-slate-100 dark:border-slate-800">
+<div class="text-primary flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+<span class="material-symbols-outlined">kitchen</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">PantryPilot</h2>
+<div class="size-10"></div> <!-- Spacer for balance -->
+</div>
+<div class="px-6 py-8">
+<!-- Hero Image Area -->
+<div class="@container mb-6">
+<div class="w-full bg-center bg-no-repeat bg-cover flex flex-col justify-end overflow-hidden rounded-lg min-h-[180px] border border-primary/20" data-alt="Organized modern kitchen pantry with glass jars" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBpvb1c3OAoLxaP_R9ADDF4YSQiNSafPITghq0cYBQ6HBk0q4KmjYYrH2vN3mxy8R8YWjKfAAMVeavPvk34ptgKPyn63t7eLu18M6wa25GgwWm33eX5JVBRszy_dpicdklO2GxGLQT9VLptSiGSsOXLwvPur9reutmcwcktC86E9mByCY4PtArG59aMv5Ux7oiPl40ro-4TLM1n0Lk0dg4VAAkU0IHWp-ERCwDyB4_d8Yn9sTWRec8bOwO_JrV-4qC90uzhdYhiPjOp");'>
+</div>
+</div>
+<div class="text-center mb-8">
+<h1 class="text-slate-900 dark:text-slate-100 tracking-light text-[28px] font-extrabold leading-tight mb-2">Welcome to PantryPilot</h1>
+<p class="text-slate-600 dark:text-slate-400 text-base font-normal">Manage your kitchen with ease</p>
+</div>
+<!-- Input Section -->
+<div class="space-y-4 mb-6">
+<div class="flex flex-col w-full">
+<label class="text-slate-900 dark:text-slate-100 text-sm font-semibold leading-normal pb-2">Email Address</label>
+<div class="relative">
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-[20px]">mail</span>
+<input class="form-input flex w-full rounded-lg border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 focus:border-primary focus:ring-primary h-14 pl-12 pr-4 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 font-normal transition-all" placeholder="Enter your email" type="email"/>
+</div>
+</div>
+<button class="w-full h-14 bg-primary text-black font-bold rounded-lg hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+<span>Continue</span>
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+<!-- Divider -->
+<div class="flex items-center gap-4 mb-6">
+<div class="h-[1px] flex-1 bg-slate-200 dark:bg-slate-800"></div>
+<span class="text-slate-400 text-xs font-bold uppercase tracking-widest">Or continue with</span>
+<div class="h-[1px] flex-1 bg-slate-200 dark:bg-slate-800"></div>
+</div>
+<!-- Social Logins -->
+<div class="grid grid-cols-2 gap-4">
+<button class="flex items-center justify-center gap-3 h-14 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+<img alt="Google Logo" class="w-5 h-5" data-alt="Google colorful brand logo icon" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBxI_INigq6HdloEPokOmLyaSAy1tj6hSbrPZqv3m1iBKJPRBh_XVtZQxsC-ngVUdE4vZum3ywQ-byRRfyauNC6KMOKmQfzitTX9f1pdUPk-eWtL3EZUB6NuT7vIqnznY8HgLp-sOVpvyMzMvkHbrFj-xmdwHIiofU58brK6nEJP1qaMfMLdyBp5kc--7jEI5ajC0hOuZL6Oq8DLbWKiQ45dOFbmUlKpK-FhjsD6bKX54ckLaprRjUF17RtZezimdbGO2QTEOZuKdex"/>
+<span class="text-sm font-bold text-slate-700 dark:text-slate-200">Google</span>
+</button>
+<button class="flex items-center justify-center gap-3 h-14 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+<img alt="Apple Logo" class="w-5 h-5 dark:invert" data-alt="Apple brand logo icon" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDePNHYiKh3jxgd-748w739tMSRTj7GpKEeOC0ulqGPd3J8dQv7EIPhUKNlTGmDTqoy3djY5hJqFbwHcWIV5r3Tc3bIEWtPq7T9-eD06XoVZ0_B9mUHzDCO3FkA7slymySZ4p7vtzz2SZ7cJizMDhHUvkeOECCKE9KOHcxNGe5Iau5Yn_Bu_fmSRvbTacDacgLmXB4EC95Nd9lv6D3XKkwkSVgPxtujEz1r0xzxAlx2P15txf5pRvsGCZ59wSMnWwg10XEyaZkiiJQE"/>
+<span class="text-sm font-bold text-slate-700 dark:text-slate-200">Apple</span>
+</button>
+</div>
+<!-- Footer Link -->
+<p class="mt-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                    Don't have an account? 
+                    <a class="text-primary font-bold hover:underline" href="#">Sign up for free</a>
+</p>
+</div>
+</div>
+<!-- System Footer -->
+<div class="mt-8 flex flex-wrap justify-center gap-6 text-slate-400 text-xs font-medium">
+<a class="hover:text-primary transition-colors" href="#">Privacy Policy</a>
+<a class="hover:text-primary transition-colors" href="#">Terms of Service</a>
+<a class="hover:text-primary transition-colors" href="#">Support</a>
+</div>
+</div>
+</body></html>

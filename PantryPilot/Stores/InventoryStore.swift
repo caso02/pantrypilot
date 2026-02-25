@@ -128,9 +128,48 @@ final class InventoryStore {
             }
             enriched.append(item)
         }
+
+        // Merge duplicate scan lines before touching persistence.
+        var mergedIncoming: [InventoryItem] = []
+        for item in enriched {
+            if let idx = mergedIncoming.firstIndex(where: { identityKey(for: $0) == identityKey(for: item) }) {
+                mergedIncoming[idx].quantity += item.quantity
+                if mergedIncoming[idx].estimatedExpiryDate == nil {
+                    mergedIncoming[idx].estimatedExpiryDate = item.estimatedExpiryDate
+                }
+                if mergedIncoming[idx].imageUrl == nil, let incomingImage = item.imageUrl, !incomingImage.isEmpty {
+                    mergedIncoming[idx].imageUrl = incomingImage
+                }
+            } else {
+                mergedIncoming.append(item)
+            }
+        }
+
         do {
-            try await repository.saveAll(enriched)
-            items.append(contentsOf: enriched)
+            var toCreate: [InventoryItem] = []
+
+            for incoming in mergedIncoming {
+                if let existingIdx = items.firstIndex(where: { identityKey(for: $0) == identityKey(for: incoming) }) {
+                    var updated = items[existingIdx]
+                    updated.quantity += incoming.quantity
+                    if updated.estimatedExpiryDate == nil {
+                        updated.estimatedExpiryDate = incoming.estimatedExpiryDate
+                    }
+                    if updated.imageUrl == nil, let incomingImage = incoming.imageUrl, !incomingImage.isEmpty {
+                        updated.imageUrl = incomingImage
+                    }
+                    try await repository.update(updated)
+                    items[existingIdx] = updated
+                } else {
+                    toCreate.append(incoming)
+                }
+            }
+
+            if !toCreate.isEmpty {
+                try await repository.saveAll(toCreate)
+                items.append(contentsOf: toCreate)
+            }
+
             triggerSync()
         } catch {
             errorMessage = error.localizedDescription
@@ -210,7 +249,8 @@ final class InventoryStore {
                 estimatedExpiryDate: item.estimatedExpiryDate.map { formatter.string(from: $0) },
                 opened: item.opened,
                 notes: item.notes,
-                category: item.category?.rawValue
+                category: item.category?.rawValue,
+                imageUrl: item.imageUrl
             )
         }
 
@@ -273,7 +313,8 @@ final class InventoryStore {
                 estimatedExpiryDate: remote.estimatedExpiryDate.flatMap { formatter.date(from: $0) },
                 opened: remote.opened,
                 notes: remote.notes,
-                category: remote.category.flatMap(FoodCategory.init(rawValue:))
+                category: remote.category.flatMap(FoodCategory.init(rawValue:)),
+                imageUrl: remote.imageUrl
             )
         }
 
@@ -328,5 +369,13 @@ final class InventoryStore {
                 AppLogger.persistence.error("Failed to restore receipts from cloud: \(error.localizedDescription)")
             }
         }
+    }
+
+    private func identityKey(for item: InventoryItem) -> String {
+        [
+            item.canonicalName.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
+            item.unit.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
+            item.location.rawValue
+        ].joined(separator: "|")
     }
 }

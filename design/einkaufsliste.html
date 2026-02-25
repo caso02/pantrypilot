@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "primary": "#13ec13",
+                "background-light": "#f6f8f6",
+                "background-dark": "#102210",
+              },
+              fontFamily: {
+                "display": ["Manrope"]
+              },
+              borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+            },
+          },
+        }
+      </script>
+<title>PantryPilot - Shopping List</title>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Header -->
+<header class="sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-primary/10 px-4 py-4 flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="bg-primary rounded-lg p-2 text-background-dark">
+<span class="material-symbols-outlined block">shopping_cart</span>
+</div>
+<div>
+<h1 class="text-xl font-bold tracking-tight">Shopping List</h1>
+<p class="text-xs text-slate-500 dark:text-slate-400">12 items remaining</p>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="p-2 rounded-full hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined">search</span>
+</button>
+<button class="p-2 rounded-full hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto pb-32">
+<!-- Suggested Items Section -->
+<section class="px-4 py-6">
+<h2 class="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">Frequently Bought</h2>
+<div class="flex gap-3 overflow-x-auto pb-2 no-scrollbar">
+<button class="flex-shrink-0 flex items-center gap-2 bg-white dark:bg-slate-800 border border-primary/20 rounded-full px-4 py-2 text-sm font-medium hover:bg-primary/5">
+<span class="material-symbols-outlined text-primary text-lg">add_circle</span>
+                    Whole Milk
+                </button>
+<button class="flex-shrink-0 flex items-center gap-2 bg-white dark:bg-slate-800 border border-primary/20 rounded-full px-4 py-2 text-sm font-medium hover:bg-primary/5">
+<span class="material-symbols-outlined text-primary text-lg">add_circle</span>
+                    Eggs (12ct)
+                </button>
+<button class="flex-shrink-0 flex items-center gap-2 bg-white dark:bg-slate-800 border border-primary/20 rounded-full px-4 py-2 text-sm font-medium hover:bg-primary/5">
+<span class="material-symbols-outlined text-primary text-lg">add_circle</span>
+                    Avocado
+                </button>
+<button class="flex-shrink-0 flex items-center gap-2 bg-white dark:bg-slate-800 border border-primary/20 rounded-full px-4 py-2 text-sm font-medium hover:bg-primary/5">
+<span class="material-symbols-outlined text-primary text-lg">add_circle</span>
+                    Bread
+                </button>
+</div>
+</section>
+<!-- List View Grouped by Category -->
+<div class="space-y-6 px-4">
+<!-- Category: Produce -->
+<div>
+<h3 class="text-lg font-bold flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary">eco</span>
+                    Produce
+                </h3>
+<div class="bg-white dark:bg-slate-800/50 rounded-xl divide-y divide-slate-100 dark:divide-slate-700/50 overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800">
+<label class="flex items-center gap-4 px-4 py-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
+<input class="h-6 w-6 rounded-full border-2 border-primary/30 text-primary focus:ring-primary focus:ring-offset-0 bg-transparent" type="checkbox"/>
+<div class="flex-1">
+<p class="font-medium">Organic Granny Smith Apples</p>
+<p class="text-xs text-slate-500">6 units</p>
+</div>
+</label>
+<label class="flex items-center gap-4 px-4 py-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
+<input class="h-6 w-6 rounded-full border-2 border-primary/30 text-primary focus:ring-primary focus:ring-offset-0 bg-transparent" type="checkbox"/>
+<div class="flex-1">
+<p class="font-medium">Baby Spinach</p>
+<p class="text-xs text-slate-500">1 bag (10oz)</p>
+</div>
+</label>
+<label class="flex items-center gap-4 px-4 py-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
+<input class="h-6 w-6 rounded-full border-2 border-primary/30 text-primary focus:ring-primary focus:ring-offset-0 bg-transparent" type="checkbox"/>
+<div class="flex-1">
+<p class="font-medium">Red Bell Peppers</p>
+<p class="text-xs text-slate-500">2 units</p>
+</div>
+</label>
+</div>
+</div>
+<!-- Category: Dairy -->
+<div>
+<h3 class="text-lg font-bold flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary">water_drop</span>
+                    Dairy &amp; Eggs
+                </h3>
+<div class="bg-white dark:bg-slate-800/50 rounded-xl divide-y divide-slate-100 dark:divide-slate-700/50 overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800">
+<label class="flex items-center gap-4 px-4 py-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
+<input checked="" class="h-6 w-6 rounded-full border-2 border-primary/30 text-primary focus:ring-primary focus:ring-offset-0 bg-transparent" type="checkbox"/>
+<div class="flex-1">
+<p class="font-medium line-through text-slate-400">Greek Yogurt (Plain)</p>
+<p class="text-xs text-slate-400">32oz tub</p>
+</div>
+<span class="material-symbols-outlined text-slate-300">check_circle</span>
+</label>
+<label class="flex items-center gap-4 px-4 py-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
+<input class="h-6 w-6 rounded-full border-2 border-primary/30 text-primary focus:ring-primary focus:ring-offset-0 bg-transparent" type="checkbox"/>
+<div class="flex-1">
+<p class="font-medium">Salted Butter</p>
+<p class="text-xs text-slate-500">1 pack</p>
+</div>
+</label>
+</div>
+</div>
+<!-- Category: Pantry -->
+<div>
+<h3 class="text-lg font-bold flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary">kitchen</span>
+                    Pantry
+                </h3>
+<div class="bg-white dark:bg-slate-800/50 rounded-xl divide-y divide-slate-100 dark:divide-slate-700/50 overflow-hidden shadow-sm border border-slate-100 dark:border-slate-800">
+<label class="flex items-center gap-4 px-4 py-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800/80 transition-colors">
+<input class="h-6 w-6 rounded-full border-2 border-primary/30 text-primary focus:ring-primary focus:ring-offset-0 bg-transparent" type="checkbox"/>
+<div class="flex-1">
+<p class="font-medium">Fusilli Pasta</p>
+<p class="text-xs text-slate-500">2 boxes</p>
+</div>
+</label>
+</div>
+</div>
+</div>
+</main>
+<!-- Quick Add & Bottom Nav Container -->
+<div class="fixed bottom-0 left-0 right-0 z-20">
+<!-- Quick Add Field -->
+<div class="px-4 pb-4">
+<div class="bg-white dark:bg-slate-800 rounded-full shadow-lg border border-primary/20 flex items-center p-1.5 focus-within:ring-2 focus-within:ring-primary">
+<input class="flex-1 bg-transparent border-none focus:ring-0 text-sm px-4 py-2" placeholder="Quick add item..." type="text"/>
+<button class="bg-primary text-background-dark p-2 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined">add</span>
+</button>
+</div>
+</div>
+<!-- Bottom Navigation -->
+<nav class="bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 px-6 py-2 flex items-center justify-between pb-8">
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">grid_view</span>
+<span class="text-[10px] font-bold">Dashboard</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">inventory_2</span>
+<span class="text-[10px] font-bold">Inventory</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<div class="bg-slate-100 dark:bg-slate-800 p-2 rounded-xl -mt-8 shadow-md border border-slate-200 dark:border-slate-700">
+<span class="material-symbols-outlined text-slate-900 dark:text-white">barcode_scanner</span>
+</div>
+<span class="text-[10px] font-bold">Scan</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary" href="#">
+<span class="material-symbols-outlined fill-[1]">shopping_cart</span>
+<span class="text-[10px] font-bold">List</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] font-bold">Settings</span>
+</a>
+</nav>
+</div>
+<style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</body></html>

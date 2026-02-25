@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@200..800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec13",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102210",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<title>PantryPilot - Inventory</title>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<!-- Header Section -->
+<header class="sticky top-0 z-10 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md border-b border-primary/10">
+<div class="flex items-center justify-between px-4 py-4">
+<div class="flex items-center gap-2">
+<div class="bg-primary p-1.5 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-background-dark text-2xl">kitchen</span>
+</div>
+<h1 class="text-xl font-extrabold tracking-tight">PantryPilot</h1>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full hover:bg-primary/10 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+</div>
+<!-- Search Bar -->
+<div class="px-4 pb-4">
+<label class="relative flex items-center group">
+<span class="material-symbols-outlined absolute left-4 text-slate-400 group-focus-within:text-primary transition-colors">search</span>
+<input class="w-full bg-slate-100 dark:bg-slate-800/50 border-none rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-primary/50 placeholder:text-slate-400 text-sm" placeholder="Search items in your pantry..." type="text"/>
+<button class="absolute right-3 p-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-sm">tune</span>
+</button>
+</label>
+</div>
+<!-- Category Tabs -->
+<div class="flex gap-2 px-4 pb-4 overflow-x-auto no-scrollbar">
+<button class="flex shrink-0 items-center justify-center px-5 py-2 rounded-full bg-primary text-background-dark text-sm font-bold">All</button>
+<button class="flex shrink-0 items-center justify-center px-5 py-2 rounded-full bg-primary/10 hover:bg-primary/20 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors">Fridge</button>
+<button class="flex shrink-0 items-center justify-center px-5 py-2 rounded-full bg-primary/10 hover:bg-primary/20 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors">Pantry</button>
+<button class="flex shrink-0 items-center justify-center px-5 py-2 rounded-full bg-primary/10 hover:bg-primary/20 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors">Freezer</button>
+<button class="flex shrink-0 items-center justify-center px-5 py-2 rounded-full bg-primary/10 hover:bg-primary/20 text-slate-700 dark:text-slate-300 text-sm font-medium transition-colors">Spices</button>
+</div>
+</header>
+<!-- Main Content: Item List -->
+<main class="flex-1 px-4 py-2 space-y-3 pb-24">
+<div class="flex items-center justify-between py-2">
+<span class="text-xs font-bold uppercase tracking-widest text-slate-400">Recent Items</span>
+<button class="text-primary text-xs font-bold flex items-center gap-1">
+                Sort: Date Added <span class="material-symbols-outlined text-sm">expand_more</span>
+</button>
+</div>
+<!-- Inventory Item 1 - Expiring Soon -->
+<div class="bg-white dark:bg-slate-800/40 p-3 rounded-xl border border-primary/5 shadow-sm flex items-center gap-4">
+<div class="relative w-16 h-16 rounded-lg bg-slate-100 dark:bg-slate-700 overflow-hidden flex-shrink-0">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="Fresh organic whole milk bottle" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuABX9MJ-4ZoxDF-iwq79E1AS_TGoXKbmMfyfqkeUgBmGHIP9Qfuq0PX10nzdfpCbBhe1lXlScRW2wcbYaw3_RHrMMGBTLePG5Bs1kMVkGW4PYJaHJ8DDz270SoSzmRq7Ckk88OFHfcnuuig1r8uHEGgYhpoBqjpLLxI7G9cnyFkVDuPYVdeczOk8lly9dz17cXIqWAFQ7sXp__c17-4S0kDhnV8TQBqvZdML2op4iuLSn7cmqdp8GgjC__i-pPFqNqFq38KIl7viRC1')"></div>
+<div class="absolute top-1 right-1 w-2 h-2 rounded-full bg-red-500 border-2 border-white dark:border-slate-800"></div>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-bold text-base truncate">Whole Milk</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">kitchen</span> Fridge
+                </p>
+<p class="text-[11px] font-bold mt-1 text-red-500 uppercase tracking-tighter">Expires in 2 days</p>
+</div>
+<div class="flex items-center gap-2">
+<button class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold hover:bg-primary/20">-</button>
+<span class="w-4 text-center text-sm font-bold">1</span>
+<button class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold hover:bg-primary/20">+</button>
+</div>
+</div>
+<!-- Inventory Item 2 -->
+<div class="bg-white dark:bg-slate-800/40 p-3 rounded-xl border border-primary/5 shadow-sm flex items-center gap-4">
+<div class="relative w-16 h-16 rounded-lg bg-slate-100 dark:bg-slate-700 overflow-hidden flex-shrink-0">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="Bag of long grain white rice" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB5YDESKnkRmgZSE6tSvfnVDzASGKURzzT11CUhlAUY6Bnn4CGcvlm3DvLOLVT_vBIod5VSIKBn6eVc64qTLtGK6Nvl5tEmLArkFSv3pSALHrsuCFMylfDKXmG-rk0RQxr_N08RWRryBKhZJyabosZMN9LcYlAisaMknDj7qpift3eVEOL2mLacHmcSoYDVs8DyhgFbWpxXvv62ppv1eIJtKqQ2lqCRT-gRgrHyGLfyNWKZV2zJG6JfzheT9Sm-ru6ESJIpYDreF8Fp')"></div>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-bold text-base truncate">Basmati Rice</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">inventory_2</span> Pantry
+                </p>
+<p class="text-[11px] font-bold mt-1 text-slate-400 uppercase tracking-tighter">Expires: Oct 2025</p>
+</div>
+<div class="flex items-center gap-2">
+<button class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold hover:bg-primary/20">-</button>
+<span class="w-4 text-center text-sm font-bold">2</span>
+<button class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold hover:bg-primary/20">+</button>
+</div>
+</div>
+<!-- Inventory Item 3 -->
+<div class="bg-white dark:bg-slate-800/40 p-3 rounded-xl border border-primary/5 shadow-sm flex items-center gap-4">
+<div class="relative w-16 h-16 rounded-lg bg-slate-100 dark:bg-slate-700 overflow-hidden flex-shrink-0">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="Frozen chicken breast packs" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA6ArF-DsxWbTqxzqiZEEyn8WSAfds2CSWo5FwxhiGt3IKUlSK6ymKHpx2PKquLO_LsBraYc8_rlIAdt9rnF5rVtEKRH-5jZvCTszAi4nhFUyAHPnlo5NeYT4q1EdrLdAalPm6VUN93udIzU5MFkoaRO_2nZvRr5CnTiCtt0pRL0O_egAdrAZU83_xO5dIwkgqF4oqjS-YaGrwrsGXOH63GUbTCMVRmrRnDvj_c6CW6ImP9DYv0bQmNnHDo2ohodSV1RcUQMVpP8iJt')"></div>
+<div class="absolute top-1 right-1 w-2 h-2 rounded-full bg-primary border-2 border-white dark:border-slate-800"></div>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-bold text-base truncate">Chicken Breast</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">ac_unit</span> Freezer
+                </p>
+<p class="text-[11px] font-bold mt-1 text-primary uppercase tracking-tighter">Expires in 3 months</p>
+</div>
+<div class="flex items-center gap-2">
+<button class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold hover:bg-primary/20">-</button>
+<span class="w-4 text-center text-sm font-bold">4</span>
+<button class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold hover:bg-primary/20">+</button>
+</div>
+</div>
+<!-- Inventory Item 4 -->
+<div class="bg-white dark:bg-slate-800/40 p-3 rounded-xl border border-primary/5 shadow-sm flex items-center gap-4">
+<div class="relative w-16 h-16 rounded-lg bg-slate-100 dark:bg-slate-700 overflow-hidden flex-shrink-0">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="Jar of ground turmeric spice" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuChxc8bn73KoKHBLB4x7YTvJOXYY84d9vrpNkDZgZKwXujRiu8R1XBj5F3IuWu2IKStHnpoVVL0ojQ_uaJK0_A-065LeZiEw2a1FCJGzndpy1ZaEfsB2JkD1tSZC8VtIrT4XTK2QXYHz7s1osyUt7kBf6BIdzeEZY93fnLI3_F6vtXdoGE2aTkuJyqjUslsxm4tGZi-FmEi1ip7noHs0rZ2tWFO0h2LeI39QS8rKSgxsw6CJRmCXOLxYofqrLa9cVgIEL7KEgVjLbLO')"></div>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-bold text-base truncate">Turmeric Powder</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">liquor</span> Spices
+                </p>
+<p class="text-[11px] font-bold mt-1 text-slate-400 uppercase tracking-tighter">Expires in 6 months</p>
+</div>
+<div class="flex items-center gap-2">
+<button class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold hover:bg-primary/20">-</button>
+<span class="w-4 text-center text-sm font-bold">1</span>
+<button class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold hover:bg-primary/20">+</button>
+</div>
+</div>
+<!-- Inventory Item 5 - Low Stock -->
+<div class="bg-white dark:bg-slate-800/40 p-3 rounded-xl border border-primary/5 shadow-sm flex items-center gap-4">
+<div class="relative w-16 h-16 rounded-lg bg-slate-100 dark:bg-slate-700 overflow-hidden flex-shrink-0">
+<div class="absolute inset-0 bg-cover bg-center" data-alt="Bowl of fresh red tomatoes" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA3uPmjG0SnmUP1qjcTEBD1Q-OXJKcMrFOkdWjnu5SMUWeqXpYbmTRmTR5BphdQDrvdCqeOWuyBvJ2yZIWWENVPqLhKhoLufFetMrDCJuxih1gg5cUBjpjam5SNG2P0pm2OekUrZA_mrIWuNhxd0sjBebp4q6KhJvoDDU8otP3QphBTO1PlVOGdj0OpJktGFr1yB8QJnjTpWY8N7fk_rlnUZGyjwajPj-C0zqZklDLQ_OGbG0Cc2Ea8Z7gNr4MpLhFZIslzYi3tyk7t')"></div>
+<div class="absolute top-1 right-1 w-2 h-2 rounded-full bg-orange-400 border-2 border-white dark:border-slate-800"></div>
+</div>
+<div class="flex-1 min-w-0">
+<h3 class="font-bold text-base truncate">Red Tomatoes</h3>
+<p class="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">kitchen</span> Fridge
+                </p>
+<p class="text-[11px] font-bold mt-1 text-orange-400 uppercase tracking-tighter">Expires in 4 days</p>
+</div>
+<div class="flex items-center gap-2">
+<button class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold hover:bg-primary/20">-</button>
+<span class="w-4 text-center text-sm font-bold">2</span>
+<button class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold hover:bg-primary/20">+</button>
+</div>
+</div>
+</main>
+<!-- Floating Action Button -->
+<div class="fixed bottom-24 right-6 z-20">
+<button class="w-14 h-14 bg-primary text-background-dark rounded-2xl shadow-lg shadow-primary/40 flex items-center justify-center hover:scale-105 transition-transform active:scale-95">
+<span class="material-symbols-outlined text-3xl font-bold">add</span>
+</button>
+</div>
+<!-- Bottom Navigation -->
+<nav class="fixed bottom-0 left-0 right-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800 pb-safe z-30">
+<div class="flex justify-around items-center px-2 py-3">
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">Dashboard</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-primary transition-colors" href="#">
+<span class="material-symbols-outlined font-fill">inventory_2</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">Inventory</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<div class="bg-primary/10 p-2 rounded-xl mb-1 -mt-2">
+<span class="material-symbols-outlined text-primary">barcode_scanner</span>
+</div>
+<span class="text-[10px] font-bold uppercase tracking-widest">Scan</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">shopping_cart</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">List</span>
+</a>
+<a class="flex flex-col items-center gap-1 text-slate-400 hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">Settings</span>
+</a>
+</div>
+</nav>
+<style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .font-fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        pb-safe {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+    </style>
+</body></html>

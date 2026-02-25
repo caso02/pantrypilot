@@ -4,6 +4,8 @@ struct InventoryView: View {
     @State private var viewModel: InventoryViewModel
     @State private var expandedCategories: Set<String> = []
     @State private var showDeleteToast = false
+    @State private var selectedCategoryFilter: FoodCategory? = nil
+    @State private var selectedSortOption: InventorySortOption = .newestFirst
     let isAuthenticated: Bool
     let isGoogleAccount: Bool
     let profileImageURL: String?
@@ -33,7 +35,7 @@ struct InventoryView: View {
                             LoadingSkeletonView(lineCount: 6)
                                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                                 .padding(.top, AppSpacing.xl)
-                        } else if viewModel.filteredItems.isEmpty {
+                        } else if !viewModel.hasAnyItems {
                             AppEmptyState(
                                 icon: "refrigerator",
                                 title: "Kein Inventar",
@@ -73,15 +75,12 @@ struct InventoryView: View {
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
-                    HStack(spacing: AppSpacing.s) {
-                        locationPicker
-                        ProfileToolbarButton(
-                            isAuthenticated: isAuthenticated,
-                            isGoogleAccount: isGoogleAccount,
-                            profileImageURL: profileImageURL,
-                            action: onOpenAccount
-                        )
-                    }
+                    ProfileToolbarButton(
+                        isAuthenticated: isAuthenticated,
+                        isGoogleAccount: isGoogleAccount,
+                        profileImageURL: profileImageURL,
+                        action: onOpenAccount
+                    )
                 }
             }
             .refreshable { await viewModel.loadData() }
@@ -124,62 +123,300 @@ struct InventoryView: View {
         }
     }
 
-    // MARK: - Location Picker
+    // MARK: - Location Filter Chips
 
-    private var locationPicker: some View {
-        Menu {
-            Button {
-                viewModel.selectedLocation = nil
-            } label: {
-                if viewModel.selectedLocation == nil {
-                    Label("Alle", systemImage: "checkmark")
-                } else {
-                    Text("Alle")
-                }
+    private var locationFilterChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                locationChip(label: "Alle", location: nil)
+                locationChip(label: StorageLocation.fridge.displayName, location: .fridge)
+                locationChip(label: StorageLocation.pantry.displayName, location: .pantry)
+                locationChip(label: StorageLocation.freezer.displayName, location: .freezer)
             }
-            ForEach(StorageLocation.allCases) { loc in
-                Button {
-                    viewModel.selectedLocation = loc
-                } label: {
-                    if viewModel.selectedLocation == loc {
-                        Label(loc.displayName, systemImage: "checkmark")
-                    } else {
-                        Text(loc.displayName)
+            .padding(.horizontal, AppSpacing.l)
+            .padding(.vertical, 4)
+        }
+    }
+
+    private func locationChip(label: String, location: StorageLocation?) -> some View {
+        let isSelected = viewModel.selectedLocation == location
+        return Button {
+            viewModel.selectedLocation = location
+        } label: {
+            Text(label)
+                .font(.system(size: 14, weight: .semibold))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .foregroundStyle(isSelected ? Color.white : AppColors.primaryForeground.opacity(0.85))
+                .background(isSelected ? AppColors.primary : AppColors.primary.opacity(0.3))
+                .clipShape(Capsule())
+                .overlay {
+                    Capsule()
+                        .strokeBorder(isSelected ? Color.white.opacity(0.18) : AppColors.primary.opacity(0.5), lineWidth: 1)
+                }
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Category Filter Chips
+
+    private var categoryFilterChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                categoryChip(label: "Alle", isSelected: selectedCategoryFilter == nil) {
+                    selectedCategoryFilter = nil
+                }
+                ForEach(usedCategories, id: \.self) { cat in
+                    categoryChip(label: cat.displayName, isSelected: selectedCategoryFilter == cat) {
+                        selectedCategoryFilter = (selectedCategoryFilter == cat) ? nil : cat
                     }
                 }
             }
-        } label: {
-            HStack(spacing: AppSpacing.xs) {
-                Image(systemName: "line.3.horizontal.decrease")
-                    .font(.caption)
-                Text(viewModel.selectedLocation?.shortName ?? "Alle")
-                    .font(AppTypography.captionMedium)
-            }
-            .padding(.horizontal, AppSpacing.s + 2)
-            .padding(.vertical, AppSpacing.s - 2)
-            .background(.ultraThinMaterial)
-            .clipShape(Capsule())
+            .padding(.horizontal, AppSpacing.l)
+            .padding(.vertical, AppSpacing.s)
         }
+    }
+
+    private var usedCategories: [FoodCategory] {
+        let cats = viewModel.filteredItems.compactMap { $0.category }
+        return Array(Set(cats)).sorted { $0.displayName < $1.displayName }
+    }
+
+    private func categoryChip(label: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label)
+                .font(.system(size: 14, weight: .semibold))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .foregroundStyle(isSelected ? Color.white : AppColors.primaryForeground.opacity(0.85))
+                .background(isSelected ? AppColors.primary : AppColors.primary.opacity(0.3))
+                .clipShape(Capsule())
+                .overlay {
+                    Capsule()
+                        .strokeBorder(isSelected ? Color.white.opacity(0.18) : AppColors.primary.opacity(0.5), lineWidth: 1)
+                }
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: - Main Content
 
     private var inventoryContent: some View {
         ScrollView {
-            LazyVStack(spacing: AppSpacing.xl) {
-                if !viewModel.useFirstItems.isEmpty {
-                    urgentSection
-                }
+            VStack(spacing: AppSpacing.m) {
+                locationFilterChips
 
-                ForEach(viewModel.groupedByLocationAndCategory) { locGroup in
-                    locationSection(locGroup)
+                HStack {
+                    Text("Neueste Artikel")
+                        .font(.system(size: 12, weight: .bold))
+                        .textCase(.uppercase)
+                        .tracking(0.7)
+                        .foregroundStyle(AppColors.textTertiary)
+                    Spacer()
+                    Menu {
+                        ForEach(InventorySortOption.allCases) { option in
+                            Button {
+                                selectedSortOption = option
+                            } label: {
+                                if selectedSortOption == option {
+                                    Label(option.label, systemImage: "checkmark")
+                                } else {
+                                    Text(option.label)
+                                }
+                            }
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Text(selectedSortOption.shortLabel)
+                                .font(.system(size: 12, weight: .semibold))
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 10, weight: .semibold))
+                        }
+                        .foregroundStyle(AppColors.primary)
+                    }
                 }
+                .padding(.top, AppSpacing.xs)
 
-                Spacer(minLength: 0)
+                if displayedItems.isEmpty {
+                    listEmptyState
+                } else {
+                    ForEach(displayedItems) { item in
+                        inventoryListRow(item)
+                    }
+                }
             }
             .padding(.horizontal, AppSpacing.l)
-            .padding(.top, AppSpacing.s)
+            .padding(.top, 0)
             .padding(.bottom, 90)
+        }
+    }
+
+    private var displayedItems: [InventoryItem] {
+        let filtered = viewModel.filteredItems.filter { item in
+            guard let selectedCategoryFilter else { return true }
+            return item.category == selectedCategoryFilter
+        }
+
+        switch selectedSortOption {
+        case .newestFirst:
+            return filtered.sorted { $0.purchaseDate > $1.purchaseDate }
+        case .oldestFirst:
+            return filtered.sorted { $0.purchaseDate < $1.purchaseDate }
+        case .nameAZ:
+            return filtered.sorted {
+                DisplayNameFormatter.format($0.canonicalName).localizedCaseInsensitiveCompare(
+                    DisplayNameFormatter.format($1.canonicalName)
+                ) == .orderedAscending
+            }
+        case .expirySoonest:
+            return filtered.sorted { lhs, rhs in
+                let lhsDate = lhs.estimatedExpiryDate ?? .distantFuture
+                let rhsDate = rhs.estimatedExpiryDate ?? .distantFuture
+                return lhsDate < rhsDate
+            }
+        }
+    }
+
+    private var listEmptyState: some View {
+        VStack(alignment: .leading, spacing: AppSpacing.s) {
+            HStack(spacing: AppSpacing.s) {
+                Image(systemName: "tray")
+                    .foregroundStyle(AppColors.textTertiary)
+                Text(emptyStateMessage)
+                    .font(AppTypography.caption)
+                    .foregroundStyle(AppColors.textSecondary)
+                Spacer()
+            }
+
+            if isAnyFilterActive {
+                Button {
+                    selectedCategoryFilter = nil
+                    viewModel.selectedLocation = nil
+                    viewModel.searchText = ""
+                } label: {
+                    Text("Filter zurücksetzen")
+                        .font(AppTypography.captionMedium)
+                        .foregroundStyle(AppColors.primary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(AppColors.primary.opacity(0.12))
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(AppSpacing.m)
+        .background(
+            RoundedRectangle(cornerRadius: AppSpacing.cardRadius, style: .continuous)
+                .fill(Color.black.opacity(0.03))
+        )
+    }
+
+    private var isAnyFilterActive: Bool {
+        selectedCategoryFilter != nil || viewModel.selectedLocation != nil || !viewModel.searchText.isEmpty
+    }
+
+    private var emptyStateMessage: String {
+        if isAnyFilterActive {
+            return "Keine Artikel im aktuellen Filter."
+        }
+        return "Keine Artikel vorhanden."
+    }
+
+    private func inventoryListRow(_ item: InventoryItem) -> some View {
+        HStack(spacing: AppSpacing.m) {
+            ProductImageView(imageUrl: item.imageUrl, category: item.category, size: 70)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(DisplayNameFormatter.format(item.canonicalName))
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(AppColors.textPrimary)
+                    .lineLimit(1)
+
+                Label(item.location.displayName, systemImage: item.location.icon)
+                    .font(.system(size: 12))
+                    .foregroundStyle(AppColors.textSecondary)
+
+                Text(item.expiryStatus.label)
+                    .font(.system(size: 11, weight: .bold))
+                    .textCase(.uppercase)
+                    .foregroundStyle(item.expiryStatus.color)
+            }
+
+            Spacer(minLength: 0)
+
+            if viewModel.isMultiSelectActive {
+                Image(systemName: viewModel.selectedIds.contains(item.id) ? "checkmark.circle.fill" : "circle")
+                    .font(.title3)
+                    .foregroundStyle(viewModel.selectedIds.contains(item.id) ? AppColors.primary : AppColors.textTertiary)
+            } else {
+                HStack(spacing: 8) {
+                    quantityButton(icon: "minus", fill: Color.black.opacity(0.06)) {
+                        Haptics.light()
+                        Task { await viewModel.adjustQuantity(item, by: -1) }
+                    }
+                    Text(compactQuantity(for: item))
+                        .font(.system(size: 14, weight: .semibold))
+                        .frame(minWidth: 22)
+                    quantityButton(icon: "plus", fill: AppColors.primary.opacity(0.2)) {
+                        Haptics.light()
+                        Task { await viewModel.adjustQuantity(item, by: 1) }
+                    }
+                }
+            }
+        }
+        .padding(AppSpacing.m)
+        .frame(minHeight: 94)
+        .background(
+            RoundedRectangle(cornerRadius: AppSpacing.cardRadius, style: .continuous)
+                .fill(AppColors.surface)
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppSpacing.cardRadius, style: .continuous)
+                        .stroke(AppColors.cardStroke, lineWidth: 1)
+                )
+        )
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if viewModel.isMultiSelectActive {
+                withAnimation(.spring(response: 0.2)) {
+                    viewModel.toggleSelection(item)
+                }
+            } else {
+                viewModel.openDetail(item)
+            }
+        }
+    }
+
+    private func quantityButton(icon: String, fill: Color, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(AppColors.textPrimary)
+                .frame(width: 30, height: 30)
+                .background(fill)
+                .clipShape(Circle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func compactQuantity(for item: InventoryItem) -> String {
+        let qty = item.quantity.truncatingRemainder(dividingBy: 1) == 0
+            ? String(format: "%.0f", item.quantity)
+            : String(format: "%.1f", item.quantity)
+        return qty
+    }
+
+    private var filteredLocationGroups: [InventoryViewModel.LocationGroup] {
+        guard let cat = selectedCategoryFilter else {
+            return viewModel.groupedByLocationAndCategory
+        }
+        return viewModel.groupedByLocationAndCategory.compactMap { locGroup in
+            let filteredCatGroups = locGroup.categoryGroups.filter { $0.category == cat }
+            guard !filteredCatGroups.isEmpty else { return nil }
+            return InventoryViewModel.LocationGroup(
+                location: locGroup.location,
+                categoryGroups: filteredCatGroups
+            )
         }
     }
 
@@ -418,6 +655,41 @@ struct InventoryView: View {
     }
 }
 
+private enum InventorySortOption: String, CaseIterable, Identifiable {
+    case newestFirst
+    case oldestFirst
+    case nameAZ
+    case expirySoonest
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .newestFirst:
+            return "Neueste zuerst"
+        case .oldestFirst:
+            return "Älteste zuerst"
+        case .nameAZ:
+            return "Name A-Z"
+        case .expirySoonest:
+            return "Ablauf zuerst"
+        }
+    }
+
+    var shortLabel: String {
+        switch self {
+        case .newestFirst:
+            return "Neueste"
+        case .oldestFirst:
+            return "Älteste"
+        case .nameAZ:
+            return "Name A-Z"
+        case .expirySoonest:
+            return "Ablauf"
+        }
+    }
+}
+
 // MARK: - Add Item Sheet
 
 struct AddInventoryItemSheet: View {
@@ -567,28 +839,39 @@ struct ItemDetailSheet: View {
         let status = item.expiryStatus
 
         return AppCard {
-            HStack(spacing: AppSpacing.m) {
-                AppIconBadge(
-                    icon: status.isExpired ? "xmark.circle.fill" : status.isSoon ? "exclamationmark.triangle.fill" : "clock.fill",
-                    color: status.isUrgent ? status.color : AppColors.textSecondary,
-                    size: 36
-                )
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Haltbarkeit")
-                        .font(AppTypography.bodyMedium)
-                    if let d = item.estimatedExpiryDate {
-                        Text(d, style: .date)
-                            .font(AppTypography.caption)
-                            .foregroundStyle(AppColors.textSecondary)
-                    } else {
-                        Text("Kein Ablaufdatum")
-                            .font(AppTypography.caption)
-                            .foregroundStyle(AppColors.textTertiary)
+            VStack(alignment: .leading, spacing: AppSpacing.s) {
+                HStack(spacing: AppSpacing.m) {
+                    AppIconBadge(
+                        icon: status.isExpired ? "xmark.circle.fill" : status.isSoon ? "exclamationmark.triangle.fill" : "clock.fill",
+                        color: status.isUrgent ? status.color : AppColors.textSecondary,
+                        size: 36
+                    )
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Haltbarkeit")
+                            .font(AppTypography.bodyMedium)
+                        if let d = item.estimatedExpiryDate {
+                            Text(d, style: .date)
+                                .font(AppTypography.caption)
+                                .foregroundStyle(AppColors.textSecondary)
+                        } else {
+                            Text("Kein Ablaufdatum")
+                                .font(AppTypography.caption)
+                                .foregroundStyle(AppColors.textTertiary)
+                        }
+                    }
+                    Spacer()
+                    if !status.shortLabel.isEmpty {
+                        AppPillBadge(text: status.shortLabel, color: status.color)
                     }
                 }
-                Spacer()
-                if !status.shortLabel.isEmpty {
-                    AppPillBadge(text: status.shortLabel, color: status.color)
+
+                Toggle("Ablaufdatum setzen", isOn: hasExpiryDateBinding)
+                    .font(AppTypography.captionMedium)
+                    .tint(AppColors.primary)
+
+                if item.estimatedExpiryDate != nil {
+                    DatePicker("Ablaufdatum", selection: expiryDateBinding, displayedComponents: .date)
+                        .datePickerStyle(.compact)
                 }
             }
         }
@@ -729,6 +1012,26 @@ struct ItemDetailSheet: View {
         Binding(
             get: { item.category ?? .other },
             set: { item.category = $0 }
+        )
+    }
+
+    private var hasExpiryDateBinding: Binding<Bool> {
+        Binding(
+            get: { item.estimatedExpiryDate != nil },
+            set: { enabled in
+                if enabled {
+                    item.estimatedExpiryDate = item.estimatedExpiryDate ?? Calendar.current.date(byAdding: .day, value: 7, to: .now)
+                } else {
+                    item.estimatedExpiryDate = nil
+                }
+            }
+        )
+    }
+
+    private var expiryDateBinding: Binding<Date> {
+        Binding(
+            get: { item.estimatedExpiryDate ?? .now },
+            set: { item.estimatedExpiryDate = $0 }
         )
     }
 }

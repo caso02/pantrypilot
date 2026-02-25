@@ -419,11 +419,7 @@ struct ScanTabView: View {
         } label: {
             AppCard(padding: AppSpacing.m, elevation: .none) {
                 HStack(spacing: AppSpacing.m) {
-                    AppIconBadge(
-                        icon: AppColors.categoryIcon(for: item.category),
-                        color: AppColors.categoryColor(for: item.category),
-                        size: 36
-                    )
+                    ProductImageView(imageUrl: item.imageUrl, category: item.category, size: 36)
 
                     VStack(alignment: .leading, spacing: AppSpacing.xs) {
                         Text(DisplayNameFormatter.format(item.canonicalName))
@@ -598,6 +594,11 @@ struct EditLineItemSheet: View {
                             Text(loc.displayName).tag(loc)
                         }
                     }
+
+                    Toggle("Ablaufdatum setzen", isOn: hasExpiryDateBinding)
+                    if item.estimatedExpiryDate != nil {
+                        DatePicker("Ablaufdatum", selection: expiryDateBinding, displayedComponents: .date)
+                    }
                 }
             }
             .navigationTitle("Bearbeiten")
@@ -618,5 +619,25 @@ struct EditLineItemSheet: View {
         }
         .presentationDetents([.medium])
         .presentationCornerRadius(AppSpacing.cardRadiusLarge)
+    }
+
+    private var hasExpiryDateBinding: Binding<Bool> {
+        Binding(
+            get: { item.estimatedExpiryDate != nil },
+            set: { enabled in
+                if enabled {
+                    item.estimatedExpiryDate = item.estimatedExpiryDate ?? Calendar.current.date(byAdding: .day, value: 7, to: .now)
+                } else {
+                    item.estimatedExpiryDate = nil
+                }
+            }
+        )
+    }
+
+    private var expiryDateBinding: Binding<Date> {
+        Binding(
+            get: { item.estimatedExpiryDate ?? .now },
+            set: { item.estimatedExpiryDate = $0 }
+        )
     }
 }

@@ -12,115 +12,95 @@ struct SignInView: View {
         ZStack {
             AppColors.background.ignoresSafeArea()
 
-            LinearGradient(
-                colors: [
-                    AppColors.primary.opacity(0.06),
-                    Color.clear,
-                    AppColors.primary.opacity(0.03),
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-
             VStack(spacing: 0) {
-                Spacer()
-
-                heroSection
-
-                Spacer()
-
-                signInSection
-                    .padding(.bottom, AppSpacing.xxl)
-            }
-        }
-    }
-
-    // MARK: - Hero
-
-    private var heroSection: some View {
-        VStack(spacing: AppSpacing.xl) {
-            ZStack {
-                Circle()
+                // Header bar
+                HStack {
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(AppColors.primary.opacity(0.12))
+                        .frame(width: 40, height: 40)
+                        .overlay {
+                            Image(systemName: "refrigerator.fill")
+                                .font(.system(size: 18))
+                                .foregroundStyle(AppColors.primary)
+                        }
+                    Spacer()
+                    Text("PantryPilot")
+                        .font(.headline.bold())
+                    Spacer()
+                    Color.clear.frame(width: 40, height: 40)
+                }
+                .padding(16)
+                Rectangle()
                     .fill(AppColors.primary.opacity(0.08))
-                    .frame(width: 140, height: 140)
+                    .frame(height: 1)
 
-                Circle()
-                    .fill(AppColors.primary.opacity(0.12))
-                    .frame(width: 110, height: 110)
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // Hero
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(AppColors.primary.opacity(0.07))
+                            .frame(height: 180)
+                            .overlay {
+                                VStack(spacing: 12) {
+                                    Image(systemName: "refrigerator.fill")
+                                        .font(.system(size: 52, weight: .light))
+                                        .foregroundStyle(AppColors.primary.opacity(0.5))
+                                    Text("Smart Kitchen")
+                                        .font(.system(size: 13, weight: .semibold))
+                                        .foregroundStyle(AppColors.primary.opacity(0.6))
+                                        .textCase(.uppercase)
+                                        .tracking(1)
+                                }
+                            }
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(AppColors.primary.opacity(0.15), lineWidth: 1)
+                            }
 
-                Image(systemName: "cart.fill")
-                    .font(.system(size: 48, weight: .medium))
-                    .foregroundStyle(AppColors.primary)
+                        // Title
+                        VStack(spacing: 8) {
+                            Text("Willkommen bei PantryPilot")
+                                .font(.system(size: 26, weight: .heavy))
+                                .multilineTextAlignment(.center)
+                            Text("Verwalte deine Küche mit Leichtigkeit")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+
+                        // Social Buttons
+                        VStack(spacing: 12) {
+                            SignInWithAppleButton(.signIn) { request in
+                                request.requestedScopes = [.fullName, .email]
+                            } onCompletion: { result in
+                                handleSignInResult(result)
+                            }
+                            .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
+                            .frame(height: 54)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                            googleSignInButton
+                        }
+
+                        if let errorMessage {
+                            Text(errorMessage)
+                                .font(.caption)
+                                .foregroundStyle(AppColors.danger)
+                                .multilineTextAlignment(.center)
+                        }
+
+                        // Footer
+                        Text("Datenschutz · Nutzungsbedingungen")
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(24)
+                }
             }
-
-            VStack(spacing: AppSpacing.m) {
-                Text("PantryPilot")
-                    .font(.system(.largeTitle, design: .rounded, weight: .bold))
-                    .foregroundStyle(AppColors.textPrimary)
-
-                Text("Dein smarter Küchenassistent")
-                    .font(AppTypography.callout)
-                    .foregroundStyle(AppColors.textSecondary)
-            }
-
-            featureList
         }
     }
 
-    private var featureList: some View {
-        VStack(alignment: .leading, spacing: AppSpacing.m) {
-            featureRow(icon: "doc.text.viewfinder", text: "Kassenzettel scannen & erkennen")
-            featureRow(icon: "clock.badge.exclamationmark", text: "Ablauf-Erinnerungen erhalten")
-            featureRow(icon: "icloud.fill", text: "Daten sicher in der Cloud speichern")
-        }
-        .padding(.top, AppSpacing.l)
-    }
-
-    private func featureRow(icon: String, text: String) -> some View {
-        HStack(spacing: AppSpacing.m) {
-            Image(systemName: icon)
-                .font(.body.weight(.medium))
-                .foregroundStyle(AppColors.primary)
-                .frame(width: 28)
-
-            Text(text)
-                .font(AppTypography.callout)
-                .foregroundStyle(AppColors.textSecondary)
-        }
-    }
-
-    // MARK: - Sign In
-
-    private var signInSection: some View {
-        VStack(spacing: AppSpacing.m) {
-            SignInWithAppleButton(.signIn) { request in
-                request.requestedScopes = [.fullName, .email]
-            } onCompletion: { result in
-                handleSignInResult(result)
-            }
-            .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
-            .frame(height: 54)
-            .clipShape(RoundedRectangle(cornerRadius: AppSpacing.buttonRadius, style: .continuous))
-            .padding(.horizontal, AppSpacing.xxl)
-
-            googleSignInButton
-
-            if let errorMessage {
-                Text(errorMessage)
-                    .font(AppTypography.caption)
-                    .foregroundStyle(AppColors.danger)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, AppSpacing.xxl)
-            }
-
-            Text("Mit der Anmeldung akzeptierst du unsere\nNutzungsbedingungen und Datenschutzrichtlinie.")
-                .font(AppTypography.caption)
-                .foregroundStyle(AppColors.textTertiary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, AppSpacing.xxl)
-        }
-    }
+    // MARK: - Sign In (kept for compatibility)
 
     private var googleSignInButton: some View {
         Button {
@@ -150,14 +130,13 @@ struct SignInView: View {
             .frame(height: 54)
             .background(colorScheme == .dark ? Color(white: 0.15) : Color.white)
             .foregroundStyle(Color(red: 0.2, green: 0.2, blue: 0.2))
-            .clipShape(RoundedRectangle(cornerRadius: AppSpacing.buttonRadius, style: .continuous))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: AppSpacing.buttonRadius, style: .continuous)
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
                     .stroke(Color.gray.opacity(0.3), lineWidth: 1)
             )
         }
         .disabled(isGoogleLoading)
-        .padding(.horizontal, AppSpacing.xxl)
     }
 
     // MARK: - Logic

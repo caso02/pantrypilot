@@ -9,11 +9,7 @@ struct ProductImageView: View {
         if let urlStr = imageUrl, let url = URL(string: urlStr) {
             AsyncImage(url: url) { phase in
                 if let image = phase.image {
-                    image
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: size, height: size)
-                        .clipShape(RoundedRectangle(cornerRadius: size * 0.2, style: .continuous))
+                    imageView(image)
                 } else {
                     fallbackBadge
                 }
@@ -31,34 +27,62 @@ struct ProductImageView: View {
             size: size
         )
     }
+
+    private func imageView(_ image: Image) -> some View {
+        image
+            .resizable()
+            .scaledToFit()
+            .frame(width: size - 8, height: size - 8)
+            .padding(4)
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: size * 0.2, style: .continuous))
+            .overlay {
+                RoundedRectangle(cornerRadius: size * 0.2, style: .continuous)
+                    .stroke(Color.black.opacity(0.06), lineWidth: 1)
+            }
+    }
 }
 
 struct InventoryItemRow: View {
     let item: InventoryItem
 
     var body: some View {
-        HStack(spacing: AppSpacing.m) {
-            ProductImageView(imageUrl: item.imageUrl, category: item.category, size: 42)
+        HStack(spacing: 12) {
+            ProductImageView(imageUrl: item.imageUrl, category: item.category, size: 56)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
 
-            VStack(alignment: .leading, spacing: AppSpacing.xs) {
-                Text(DisplayNameFormatter.format(item.canonicalName))
-                    .font(AppTypography.bodyMedium)
-                    .lineLimit(1)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(item.expiryStatus.color)
+                        .frame(width: 7, height: 7)
+                    Text(DisplayNameFormatter.format(item.canonicalName))
+                        .font(.system(size: 15, weight: .semibold))
+                        .lineLimit(1)
+                }
 
-                HStack(spacing: AppSpacing.s) {
-                    Label(quantityText, systemImage: "scalemass")
-                        .font(AppTypography.caption)
-                        .foregroundStyle(AppColors.textSecondary)
+                Text(item.location.displayName)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
 
+                HStack(spacing: 6) {
+                    Text(quantityText)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                     if item.opened {
-                        AppPillBadge(text: "Offen", color: AppColors.info, style: .subtle)
+                        Text("· Offen")
+                            .font(.caption2)
+                            .foregroundStyle(AppColors.info)
+                    }
+                    if item.expiryStatus != .unknown {
+                        Text("· \(item.expiryStatus.shortLabel)")
+                            .font(.caption2)
+                            .foregroundStyle(item.expiryStatus.color)
                     }
                 }
             }
 
-            Spacer(minLength: AppSpacing.xs)
-
-            expiryPill
+            Spacer(minLength: 4)
         }
         .padding(.vertical, AppSpacing.xs)
     }
@@ -68,16 +92,5 @@ struct InventoryItemRow: View {
             ? String(format: "%.0f", item.quantity)
             : String(format: "%.1f", item.quantity)
         return "\(qty) \(item.unit)"
-    }
-
-    @ViewBuilder
-    private var expiryPill: some View {
-        let status = item.expiryStatus
-        switch status {
-        case .unknown:
-            EmptyView()
-        default:
-            AppPillBadge(text: status.shortLabel, color: status.color)
-        }
     }
 }

@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec13",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102210",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<title>PantryPilot - Recipe Inspiration</title>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-background-dark group/design-root overflow-x-hidden">
+<div class="flex items-center bg-background-light dark:bg-background-dark p-4 pb-2 justify-between sticky top-0 z-10">
+<button aria-label="Go back" class="text-slate-900 dark:text-slate-100 flex size-12 shrink-0 items-center justify-center hover:bg-primary/10 rounded-full transition-colors">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-12">PantryPilot</h2>
+</div>
+<div class="flex flex-col flex-1">
+<div class="@container px-4 py-3">
+<div class="w-full bg-center bg-no-repeat bg-cover flex flex-col justify-end overflow-hidden bg-slate-200 dark:bg-slate-800 rounded-xl min-h-[320px] shadow-sm border border-slate-200 dark:border-slate-700" data-alt="A modern bright kitchen counter with fresh vegetables and a tablet showing recipes" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCOykdBs-OnYmEceap3oJ4PIqwWG8T5uLeUMuljorGP__vx7Uk4YEH1JLTK38AavMS8HRwzA4VqWh3-1-Sk9CkuRVD3BhQaR6yrP_YQfhELlkVeEuPMuFWHjKEPxiyGKemf40OGKXb7yCHPcjDwR6tvb3codEa2hDG6dudI8ES6FIeqOy5Ow0mNydPcZVlfLLV2DB7shCJqwpJHaJkCpyv4_NHwb1ksGNQzDNKGYdGCDNlCLXeL6P0Ubt4GdM1NSB41-iAhLg22iGxM");'>
+</div>
+</div>
+<div class="px-6 py-8 flex flex-col items-center max-w-2xl mx-auto">
+<div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/20 text-slate-900 dark:text-slate-100 text-xs font-bold mb-4">
+<span class="material-symbols-outlined text-sm">auto_awesome</span>
+                    AI-POWERED SUGGESTIONS
+                </div>
+<h1 class="text-slate-900 dark:text-slate-100 tracking-tight text-[32px] font-extrabold leading-tight text-center pb-4">
+                    Recipes from Your Ingredients
+                </h1>
+<p class="text-slate-600 dark:text-slate-400 text-base font-medium leading-relaxed text-center max-w-md">
+                    Our AI Assistant scans what's in your fridge to suggest delicious meals, helping you reduce food waste and save time.
+                </p>
+</div>
+<div class="px-4 pb-8">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-slate-900 dark:text-slate-100 font-bold text-lg">Instant Meal Ideas</h3>
+<span class="text-primary text-sm font-bold flex items-center gap-1">
+                        View All <span class="material-symbols-outlined text-xs">arrow_forward</span>
+</span>
+</div>
+<div class="grid grid-cols-[repeat(auto-fit,minmax(158px,1fr))] gap-4">
+<div class="group relative overflow-hidden rounded-xl aspect-square shadow-lg" data-alt="Delicious close-up of a colorful pasta primavera dish" style='background-image: linear-gradient(0deg, rgba(16, 34, 16, 0.8) 0%, rgba(0, 0, 0, 0) 50%), url("https://lh3.googleusercontent.com/aida-public/AB6AXuAUmSzFncDjlNt76XfDybTsh-Gfx63xJtl5xPy-sV6PBX_g6OMfR0i-bTgheRnB-lcS1bUWMRLT7Cd7v_uyApZT6Kt0b6tZUwIE942hW-TG5nve8gV1tjUUm-WIaLvd0QEGzQSQHci22LtHd1TdTdSqGP9YhKV0IXfiFw5sqpCUgn3jpBMFLGSJ80KuF1IMVxPUIXK6utFr4BJQA3QMGq9exDom6GEc8H_A-B0biwE15pbCT9Thd4iNTuNX19CFZGpBfbbAqlLTIf-Z"); background-size: cover;'>
+<div class="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<div class="absolute bottom-0 left-0 p-4">
+<p class="text-white text-base font-bold leading-tight line-clamp-2">Pasta Primavera</p>
+<span class="text-primary text-xs font-bold">15 mins</span>
+</div>
+</div>
+<div class="group relative overflow-hidden rounded-xl aspect-square shadow-lg" data-alt="Healthy vegetable stir-fry with tofu and sesame seeds" style='background-image: linear-gradient(0deg, rgba(16, 34, 16, 0.8) 0%, rgba(0, 0, 0, 0) 50%), url("https://lh3.googleusercontent.com/aida-public/AB6AXuCyzG8jOY-O7B2L3udl2xP0_bdjsR6gVhMcKQQYum_meJDtGYV8TisbkU6lw7fsX1RnMJwEdLu5Gnwr0IOi5kFu138WF8lJlAO2kKWAR5S-3lagPbkwYoL6ZPQjv-ja8KaXs3e_kOO0mpthvCUZjpwOfl-zhBHCIC4S27BYpew0BOV0yHx1oWu2GzFScmKCCmKphEUW0Y9xPyyOnLEIxDJ1T2lvIYsPd6ndQbmkt-Dq5uflxpAzqknuL41UmCabNcZlCWYFYVzATh9t"); background-size: cover;'>
+<div class="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<div class="absolute bottom-0 left-0 p-4">
+<p class="text-white text-base font-bold leading-tight line-clamp-2">Stir-fry Veggies</p>
+<span class="text-primary text-xs font-bold">10 mins</span>
+</div>
+</div>
+<div class="group relative overflow-hidden rounded-xl aspect-square shadow-lg" data-alt="Roasted herb chicken breast with lemon and rosemary" style='background-image: linear-gradient(0deg, rgba(16, 34, 16, 0.8) 0%, rgba(0, 0, 0, 0) 50%), url("https://lh3.googleusercontent.com/aida-public/AB6AXuCQbmmTPdE1aGr_aE1xGHvN116DRzgSuDhwEJGXmCktCEhUFEKs6vjdHGn07_gvIrrd1jXACfx0_z8jusqQW9RLNGYFjVI41c1oXtU_q648Jvl-ayEfmoz4XWXaiscRhpoQ4RvgbHDqA1b5E9_Taer3ggIC1y8gtjThJOsD8aJxFzYb8Ygm9Ulxd8XpGwEr6iX04rs_CB7xcEw4CtQzSPPHRv4YJxJTC6EM9Fu4I6IaSw3GdlVly76ZLaDe_Cvm5M5zXzp2ek6lzPwj"); background-size: cover;'>
+<div class="absolute inset-0 bg-primary/10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<div class="absolute bottom-0 left-0 p-4">
+<p class="text-white text-base font-bold leading-tight line-clamp-2">Herb Chicken</p>
+<span class="text-primary text-xs font-bold">25 mins</span>
+</div>
+</div>
+</div>
+</div>
+<div class="mt-auto p-4 flex flex-col gap-3 sticky bottom-0 bg-background-light dark:bg-background-dark border-t border-slate-200 dark:border-slate-800">
+<div class="flex justify-center gap-2 mb-2">
+<div class="w-2 h-2 rounded-full bg-primary/30"></div>
+<div class="w-8 h-2 rounded-full bg-primary"></div>
+<div class="w-2 h-2 rounded-full bg-primary/30"></div>
+</div>
+<button class="w-full bg-primary text-slate-900 font-bold py-4 rounded-xl shadow-md hover:brightness-105 active:scale-[0.98] transition-all">
+                    Next
+                </button>
+<button class="w-full text-slate-500 dark:text-slate-400 font-bold py-2 rounded-xl hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+                    Skip onboarding
+                </button>
+</div>
+</div>
+</div>
+</body></html>
+
+
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>PantryPilot - Smart Shopping</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#13ec13",
+                        "background-light": "#f6f8f6",
+                        "background-dark": "#102210",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 min-h-screen flex flex-col">
+<div class="relative flex h-full min-h-screen w-full flex-col bg-background-light dark:bg-background-dark group/design-root overflow-x-hidden">
+<!-- Top Navigation -->
+<div class="flex items-center bg-background-light dark:bg-background-dark p-4 pb-2 justify-between">
+<div class="text-slate-900 dark:text-slate-100 flex size-12 shrink-0 items-center cursor-pointer" data-icon="ArrowLeft">
+<span class="material-symbols-outlined text-2xl">arrow_back</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-12">PantryPilot</h2>
+</div>
+<!-- Main Hero Image -->
+<div class="px-4 py-3">
+<div class="w-full bg-center bg-no-repeat bg-cover flex flex-col justify-end overflow-hidden bg-slate-200 dark:bg-slate-800 rounded-xl min-h-80 shadow-sm" data-alt="A person pushing a grocery cart filled with fresh vegetables in a bright supermarket aisle" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuC3XPcFdFfGkkdhXNeQMatjx3WYo7XtHor4Xe2qyVfaBc5i_KqxPi6j_nB7tqRhvaMNcpkx__2mmQr7j3bmBaBe3pyypCyArD1OhdrTkvBXb1CSz8qi0pGm16rEbrgG6ycO49Po3RFj0BuGPHutTixMEU4Dt0MxB5ZFwMD8PBEhJHccVpyP6bUanpdQiFORiL4tShdmVXtwhmcGuCnD0E_ErwgiHQZn5gFgFuruhd8TH0ZWyMrDt-J5ud0yqy0itVQ6eqZzHGu_JCzy");'>
+</div>
+</div>
+<!-- Content Section -->
+<div class="flex flex-col flex-1 px-4">
+<h1 class="text-slate-900 dark:text-slate-100 tracking-tight text-[32px] font-extrabold leading-tight text-center pb-3 pt-6">Shop Smarter, Waste Less</h1>
+<p class="text-slate-600 dark:text-slate-400 text-base font-normal leading-normal pb-6 pt-1 text-center">
+                Effortlessly manage your grocery list and track your spending. Get real-time insights into your shopping habits to save more every month.
+            </p>
+<!-- Features Grid -->
+<div class="grid grid-cols-2 gap-4 pb-8">
+<div class="flex flex-col gap-3 p-4 bg-primary/10 dark:bg-primary/5 rounded-xl border border-primary/20">
+<div class="size-10 rounded-full bg-primary flex items-center justify-center text-slate-900">
+<span class="material-symbols-outlined">shopping_basket</span>
+</div>
+<div>
+<p class="text-slate-900 dark:text-slate-100 text-base font-bold leading-tight">Smart List</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium leading-normal mt-1">Auto-generated needs based on usage</p>
+</div>
+</div>
+<div class="flex flex-col gap-3 p-4 bg-primary/10 dark:bg-primary/5 rounded-xl border border-primary/20">
+<div class="size-10 rounded-full bg-primary flex items-center justify-center text-slate-900">
+<span class="material-symbols-outlined">payments</span>
+</div>
+<div>
+<p class="text-slate-900 dark:text-slate-100 text-base font-bold leading-tight">Spending</p>
+<p class="text-slate-500 dark:text-slate-400 text-xs font-medium leading-normal mt-1">Detailed monthly budget analytics</p>
+</div>
+</div>
+</div>
+<!-- Onboarding Progress Indicators -->
+<div class="flex justify-center gap-2 mb-8">
+<div class="h-2 w-2 rounded-full bg-primary/30"></div>
+<div class="h-2 w-2 rounded-full bg-primary/30"></div>
+<div class="h-2 w-6 rounded-full bg-primary"></div>
+</div>
+<!-- Call to Action -->
+<div class="mt-auto pb-8">
+<button class="w-full bg-primary hover:bg-primary/90 text-slate-900 font-bold py-4 px-6 rounded-xl text-lg transition-colors shadow-lg shadow-primary/20">
+                    Get Started
+                </button>
+<p class="text-slate-400 dark:text-slate-500 text-xs text-center mt-4">
+                    Join 10,000+ users saving $100+ monthly
+                </p>
+</div>
+</div>
+<div class="h-4 bg-background-light dark:bg-background-dark"></div>
+</div>
+</body></html>

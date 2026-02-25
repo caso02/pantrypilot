@@ -1,14 +1,28 @@
 import SwiftUI
+import UIKit
 
 struct MainTabView: View {
     let sessionStore: SessionStore
     let inventoryStore: InventoryStore
     let container: DependencyContainer
-    @State private var selectedTab = 0
+    @State private var selectedTab = 3  // Start on Dashboard
     @State private var showQuickAccountSheet = false
 
     var body: some View {
         TabView(selection: $selectedTab) {
+            InsightsView(
+                store: inventoryStore,
+                selectedTab: $selectedTab,
+                isAuthenticated: sessionStore.isAuthenticated,
+                isGoogleAccount: sessionStore.authProvider == .google,
+                profileImageURL: sessionStore.userAvatarURL,
+                onOpenAccount: { showQuickAccountSheet = true }
+            )
+            .tag(3)
+            .tabItem {
+                Label("Übersicht", systemImage: "square.grid.2x2.fill")
+            }
+
             InventoryView(
                 store: inventoryStore,
                 isAuthenticated: sessionStore.isAuthenticated,
@@ -16,8 +30,10 @@ struct MainTabView: View {
                 profileImageURL: sessionStore.userAvatarURL,
                 onOpenAccount: { showQuickAccountSheet = true }
             )
-                .tabItem { Label("Inventar", systemImage: "refrigerator.fill") }
-                .tag(0)
+            .tag(0)
+            .tabItem {
+                Label("Inventar", systemImage: "refrigerator.fill")
+            }
 
             ScanTabView(
                 receiptRepository: container.receiptRepository,
@@ -32,8 +48,10 @@ struct MainTabView: View {
                 profileImageURL: sessionStore.userAvatarURL,
                 onOpenAccount: { showQuickAccountSheet = true }
             )
-            .tabItem { Label("Scan", systemImage: "doc.text.viewfinder") }
             .tag(1)
+            .tabItem {
+                Label("Kamera", systemImage: "camera.fill")
+            }
 
             ShoppingListView(
                 store: inventoryStore,
@@ -43,25 +61,27 @@ struct MainTabView: View {
                 profileImageURL: sessionStore.userAvatarURL,
                 onOpenAccount: { showQuickAccountSheet = true }
             )
-            .tabItem { Label("Einkaufsliste", systemImage: "cart.fill") }
             .tag(2)
-
-            InsightsView(
-                store: inventoryStore,
-                isAuthenticated: sessionStore.isAuthenticated,
-                isGoogleAccount: sessionStore.authProvider == .google,
-                profileImageURL: sessionStore.userAvatarURL,
-                onOpenAccount: { showQuickAccountSheet = true }
-            )
-                .tabItem { Label("Übersicht", systemImage: "chart.bar.fill") }
-                .tag(3)
+            .tabItem {
+                Label("Einkaufsliste", systemImage: "cart.fill")
+            }
 
             SettingsView(
                 sessionStore: sessionStore,
                 notificationManager: container.notificationManager
             )
-            .tabItem { Label("Einstellungen", systemImage: "gearshape.fill") }
             .tag(4)
+            .tabItem {
+                Label("Einstellungen", systemImage: "gearshape.fill")
+            }
+        }
+        .preferredColorScheme(.light)
+        .tint(AppColors.primary)
+        .onAppear {
+            configureTabBarAppearance()
+        }
+        .task {
+            await inventoryStore.loadInventory()
         }
         .sheet(isPresented: $showQuickAccountSheet) {
             QuickAccountSheet(
@@ -73,7 +93,34 @@ struct MainTabView: View {
             )
         }
     }
+
+    private func configureTabBarAppearance() {
+        let appearance = UITabBarAppearance()
+        appearance.configureWithTransparentBackground()
+        appearance.backgroundEffect = UIBlurEffect(style: .systemUltraThinMaterial)
+        appearance.backgroundColor = UIColor.white.withAlphaComponent(0.22)
+        appearance.shadowColor = UIColor.white.withAlphaComponent(0.2)
+
+        let normalColor = UIColor.darkGray.withAlphaComponent(0.85)
+        let selectedColor = UIColor(red: 19 / 255, green: 236 / 255, blue: 19 / 255, alpha: 1)
+
+        [appearance.stackedLayoutAppearance, appearance.inlineLayoutAppearance, appearance.compactInlineLayoutAppearance]
+            .forEach { itemAppearance in
+                itemAppearance.normal.iconColor = normalColor
+                itemAppearance.normal.titleTextAttributes = [.foregroundColor: normalColor]
+                itemAppearance.selected.iconColor = selectedColor
+                itemAppearance.selected.titleTextAttributes = [.foregroundColor: selectedColor]
+            }
+
+        let proxy = UITabBar.appearance()
+        proxy.standardAppearance = appearance
+        proxy.scrollEdgeAppearance = appearance
+        proxy.isTranslucent = true
+        proxy.isHidden = false
+    }
 }
+
+// MARK: - Profile Toolbar Button
 
 struct ProfileToolbarButton: View {
     let isAuthenticated: Bool
@@ -118,7 +165,7 @@ struct ProfileToolbarButton: View {
             .frame(width: 28, height: 28)
             .clipShape(Circle())
             .overlay {
-                Circle().stroke(AppColors.cardStroke, lineWidth: 0.5)
+                Circle().stroke(AppColors.primary, lineWidth: 2)
             }
         } else {
             Image(systemName: "person.crop.circle")
@@ -128,6 +175,8 @@ struct ProfileToolbarButton: View {
     }
 }
 
+// MARK: - Quick Account Sheet
+
 private struct QuickAccountSheet: View {
     let sessionStore: SessionStore
     let onOpenAccount: () -> Void
@@ -135,7 +184,8 @@ private struct QuickAccountSheet: View {
 
     var body: some View {
         NavigationStack {
-            AppBackgroundView {
+            ZStack {
+                AppColors.background.ignoresSafeArea()
                 VStack(spacing: AppSpacing.l) {
                     ProfileToolbarButton(
                         isAuthenticated: sessionStore.isAuthenticated,

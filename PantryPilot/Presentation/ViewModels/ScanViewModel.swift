@@ -46,12 +46,17 @@ final class ScanViewModel {
         var price: Double?
         var category: FoodCategory
         var location: StorageLocation
+        var estimatedExpiryDate: Date?
         var isIgnored: Bool
         var confidence: String
         var dbScore: Double?
         var imageUrl: String?
 
-        init(from parsed: ParsedAndMatchedLine, normService: NormalizationService) {
+        init(
+            from parsed: ParsedAndMatchedLine,
+            normService: NormalizationService,
+            expiryService: ExpiryEstimationService
+        ) {
             self.id = UUID()
             self.rawText = parsed.rawText
             self.confidence = parsed.llm.confidence ?? "medium"
@@ -71,10 +76,20 @@ final class ScanViewModel {
             let llmCategory = parsed.llm.category
             self.category = Self.mapCategory(llmCategory) ?? normService.guessCategory(for: productName)
             self.location = NormalizationService.defaultLocationForCategory[self.category] ?? .pantry
+            self.estimatedExpiryDate = expiryService.estimateExpiry(
+                category: self.category,
+                location: self.location,
+                opened: false,
+                from: .now
+            )
             self.isIgnored = normService.isNonFood(parsed.rawText) || self.confidence == "low"
         }
 
-        init(from parsed: ParsedLineItem, normService: NormalizationService) {
+        init(
+            from parsed: ParsedLineItem,
+            normService: NormalizationService,
+            expiryService: ExpiryEstimationService
+        ) {
             self.id = parsed.id
             self.rawText = parsed.rawText
             let normalized = normService.normalize(parsed.rawText)
@@ -89,6 +104,12 @@ final class ScanViewModel {
             let cat = normService.guessCategory(for: normalized)
             self.category = cat
             self.location = NormalizationService.defaultLocationForCategory[cat] ?? .pantry
+            self.estimatedExpiryDate = expiryService.estimateExpiry(
+                category: self.category,
+                location: self.location,
+                opened: false,
+                from: .now
+            )
             self.isIgnored = normService.isNonFood(parsed.rawText)
         }
 
@@ -221,7 +242,9 @@ final class ScanViewModel {
             formatter.locale = Locale(identifier: "de_CH")
             parsedDate = formatter.string(from: Date())
 
-            allItems = response.parsed.map { EditableLineItem(from: $0, normService: normalizationService) }
+            allItems = response.parsed.map {
+                EditableLineItem(from: $0, normService: normalizationService, expiryService: expiryService)
+            }
             state = .confirming
         } catch {
             state = .error("Produkterkennung fehlgeschlagen: \(error.localizedDescription)")
@@ -240,7 +263,9 @@ final class ScanViewModel {
             let result = try await receiptRepository.uploadAndParse(imageData: data)
             parsedMerchant = result.merchant
             parsedDate = result.purchaseDate
-            allItems = result.lineItems.map { EditableLineItem(from: $0, normService: normalizationService) }
+            allItems = result.lineItems.map {
+                EditableLineItem(from: $0, normService: normalizationService, expiryService: expiryService)
+            }
             state = .confirming
         } catch {
             state = .error(error.localizedDescription)
@@ -277,6 +302,7 @@ final class ScanViewModel {
             allItems[idx].unit = edited.unit
             allItems[idx].category = edited.category
             allItems[idx].location = edited.location
+            allItems[idx].estimatedExpiryDate = edited.estimatedExpiryDate
         }
         editingItem = nil
     }
@@ -284,7 +310,7 @@ final class ScanViewModel {
     func addToInventory(context: ModelContext) async {
         let items = activeItems
         let inventoryItems = items.map { item -> InventoryItem in
-            let expiry = expiryService.estimateExpiry(
+            let expiry = item.estimatedExpiryDate ?? expiryService.estimateExpiry(
                 category: item.category,
                 location: item.location,
                 opened: false,

@@ -40,7 +40,7 @@ struct AppCard<Content: View>: View {
             .padding(padding)
             .background {
                 RoundedRectangle(cornerRadius: AppSpacing.cardRadius, style: .continuous)
-                    .fill(.regularMaterial)
+                    .fill(AppColors.surface)
                     .shadow(
                         color: .black.opacity(elevation.shadowOpacity),
                         radius: elevation.shadowRadius,

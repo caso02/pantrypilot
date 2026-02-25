@@ -14,6 +14,7 @@ const inventoryItemSchema = z.object({
   opened: z.boolean().default(false),
   notes: z.string().nullable().optional(),
   category: z.string().nullable().optional(),
+  imageUrl: z.string().nullable().optional(),
 });
 
 const shoppingItemSchema = z.object({
@@ -85,6 +86,7 @@ export async function syncRoutes(app: FastifyInstance) {
           opened: item.opened,
           notes: item.notes,
           category: item.category,
+          imageUrl: item.imageUrl,
         },
         update: {
           canonicalName: item.canonicalName,
@@ -96,6 +98,7 @@ export async function syncRoutes(app: FastifyInstance) {
           opened: item.opened,
           notes: item.notes,
           category: item.category,
+          imageUrl: item.imageUrl,
         },
       });
     }
@@ -236,6 +239,7 @@ export async function syncRoutes(app: FastifyInstance) {
         opened: boolean;
         notes: string | null;
         category: string | null;
+        imageUrl: string | null;
       }) => ({
         clientId: i.clientId,
         canonicalName: i.canonicalName,
@@ -247,6 +251,7 @@ export async function syncRoutes(app: FastifyInstance) {
         opened: i.opened,
         notes: i.notes,
         category: i.category,
+        imageUrl: i.imageUrl,
       })),
       shoppingList: shoppingList.map((s: {
         clientId: string;

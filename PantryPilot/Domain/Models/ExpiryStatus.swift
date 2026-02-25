@@ -57,9 +57,15 @@ enum ExpiryStatus: Equatable {
 
     var color: Color {
         switch self {
-        case .fresh: return .secondary
-        case .soon: return .orange
-        case .expired: return .red
+        case .fresh(let days):
+            if days <= 7 { return .yellow }
+            return .green
+        case .soon(let days):
+            // Visual urgency scale: <=1 day red, <=3 days orange.
+            if days <= 1 { return .red }
+            return .orange
+        case .expired:
+            return .red
         case .unknown: return .secondary
         }
     }

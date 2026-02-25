@@ -17,6 +17,7 @@ struct SyncInventoryItem: Codable {
     let opened: Bool
     let notes: String?
     let category: String?
+    let imageUrl: String?
 }
 
 struct SyncShoppingItem: Codable {
